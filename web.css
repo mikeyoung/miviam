@@ -1,0 +1,11 @@
+#socialCode {
+	max-width:626px;
+	width:80%;
+	margin:0 auto;
+	text-align:right;
+}
+
+#mainContainer {
+	moz-border-radius:10px;
+	webkit-border-radius:10px;
+}

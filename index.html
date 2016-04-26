@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>MiViAm: Mike's Vintage Ambient</title>
+		<meta charset="utf-8" />
+
+		<!-- begin web code: meta -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<link rel="image_src" href="img/square_logo.jpg"/>
+		<meta name="description" content="MiViAm is a simple, soothing sound chimes app which features a sleep timer and alarm function." />
+		<meta name="author" content="Mike Young" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- end web code: meta -->
+
+		<link rel="stylesheet" type="text/css" href="main.css?v=2" />
+		
+		<!-- begin web code: css -->
+		<link rel="stylesheet" type="text/css" href="web.css?v=2" />
+		<!-- end web code: css -->
+
+		<script src="js/jquery-1.7.1.min.js"></script>
+		<script src="js/jquery_cookie.js"></script>
+		<script src="js/main.js?v=2"></script>
+		
+		<!-- Begin web code: social and tracking -->
+		<script type="text/javascript">var switchTo5x=true;</script>
+		<script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
+		<script type="text/javascript">stLight.options({publisher: "40abf7bc-e945-43ad-bfb4-9b1e0a51ab20"}); </script>
+		<script type="text/javascript">
+		  var _gaq = _gaq || [];
+		  _gaq.push(['_setAccount', 'UA-32007426-1']);
+		  _gaq.push(['_trackPageview']);
+		
+		  (function() {
+		    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+		  })();
+		</script>
+		<script>
+			if ($.browser.msie && $.browser.version < 10) {
+				alert("IE 9 or lower detected.  MiViAm only supports fully functional HTML5 browsers.\n\nChrome works best but Safari, Firefox and even Opera have all been tested to work fine except that Firefox will stop after the window loses focus or if the system goes idle.");
+			}
+		</script>
+		<!-- End web code: social and tracking -->
+
+	</head>
+	<body>
+		<div id="mainContainer">
+			<img src="img/title.png" id="titleImage" alt="MiViAm: Mike's Vintage Ambient" />
+			<div id="loadingIndicator" class="label" style="text-align: center">
+				<div id="loadingLabel">loading...</div>
+				<div id="loadingProgressBar">&nbsp;</div>
+			</div>
+			<div id="controls">
+				<table id="basicControlsTable" cellpadding="0" cellspacing="0">
+					<tr>
+						<td style="text-align:left;"><input id="startButton" type="button" value="Start" /></td>
+						<td style="text-align:right;"><input id="stopButton" type="button" value="Stop" disabled="disabled" /></td>
+					</tr>
+				</table>
+				<div class="mainControl" style="margin:15px auto 0 auto"><input id="sleepButton" type="button" value="Sleep" /></div>
+				<div class="mainControl" style="margin:20px auto 0 auto"><input id="alarmCheckbox" type="checkbox" />&nbsp;<span class="label" id="alarmCheckLabel"></span></div>
+				<br />
+				<div style="text-align:center">
+					<span id="showSettings">Show advanced settings and info</span>
+					<span id="hideSettings">Hide advanced settings and info</span>
+				</div>
+				<div id="settings">
+					<br /><br />
+					<table>
+						<tr>
+							<td class="label" colspan="3">Alarm time:&nbsp;</td>
+						</tr>
+						<tr>
+							<td><select id="alarmHour">
+								<option value="00">00</option>
+								<option value="01">01</option>
+								<option value="02">02</option>
+								<option value="03">03</option>
+								<option value="04">04</option>
+								<option value="05">05</option>
+								<option value="06" selected="selected">06</option>
+								<option value="07">07</option>
+								<option value="08">08</option>
+								<option value="09">09</option>
+								<option value="10">10</option>
+								<option value="11">11</option>
+								<option value="12">12</option>
+								<option value="13">13</option>
+								<option value="14">14</option>
+								<option value="15">15</option>
+								<option value="16">16</option>
+								<option value="17">17</option>
+								<option value="18">18</option>
+								<option value="19">19</option>
+								<option value="20">20</option>
+								<option value="21">21</option>
+								<option value="22">22</option>
+								<option value="23">23</option>
+							</select></td>
+							<td class="label">:</td>
+							<td><select id="alarmMinute">
+								<option value="00" selected="selected">00</option>
+								<option value="05">05</option>
+								<option value="10">10</option>
+								<option value="15">15</option>
+								<option value="20">20</option>
+								<option value="25">25</option>
+								<option value="30">30</option>
+								<option value="35">35</option>
+								<option value="40">40</option>
+								<option value="45">45</option>
+								<option value="50">50</option>
+								<option value="55">55</option>
+							</select></td>
+						</tr>
+					</table>
+					<br />
+					<table>
+						<tr>
+							<td colspan="2" class="label centered">Active sounds:<br /><br />- Jazz -<br /></td>
+						</tr>
+						<tr>
+							<td><input id="bassCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Bass</td>
+						</tr>
+						<tr>
+							<td><input id="fluteCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Flutes</td>
+						</tr>
+						<tr>
+							<td><input id="rhodesCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Rhodes</td>
+						</tr>
+						<tr>
+							<td><input id="vibesCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Vibes</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="label centered"><br />- Classical -<br /></td>
+						</tr>
+						<tr>
+							<td><input id="celloCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Cello</td>
+						</tr>
+						<tr>
+							<td><input id="m300StringsCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;M300 Strings</td>
+						</tr>
+						<tr>
+							<td><input id="violaCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Viola</td>
+						</tr>
+						<tr>
+							<td><input id="violinsCheckbox" class="instrumentCheckbox checkedByDefault" type="checkbox" checked="checked" /></td>
+							<td class="label">&nbsp;Violins</td>
+						</tr>
+					</table>
+					<table>
+						<tr>
+							<td colspan="2" class="label centered"><br />- Ambience -<br /></td>
+						</tr>
+						<tr>
+							<td class="label">&nbsp;Vinyl surface volume</td>
+							<td>
+								<select id="vinylVolumeSelect">
+									<option value="0">Off</option>
+									<option value="1">Low</option>
+									<option value="2" selected="selected">Medium</option>
+									<option value="3">High</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<table>
+						<tr>
+							<td class="label">Chime frequency:&nbsp;</td>
+							<td>
+								<select id="totalSoundsSelect">
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3">3</option>
+									<option value="4" selected="selected">4</option>
+									<option value="5">5</option>
+									<option value="6">6</option>
+									<option value="7">7</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<div style="text-align: center">
+						<input type="button" id="resetDefaultLink" value="Reset to default" />
+					</div>
+					<br /><br />
+					<div class="notes">
+						<!-- Begin web code: browser notes -->
+						<div style="text-align: left">
+							MiViAm uses sound samples from a Mellotron and a Fender Rhodes electric piano to produce an endless sequence of relaxing notes which play over a bed of ambient vinyl LP surface sound.  Since MiViAm produces unique sequences which will not repeat there is no pattern to focus on and tire of.  The frequency of the chimes can be set and each instrument can be turned on or off.<br />
+							<br />
+							For best performance including offline functionality, install the <a href="https://chrome.google.com/webstore/detail/hnamckajkcpfjdcddjopahafbdanijnp" target="_blank">MiViAm App for Chrome</a> available as a free download in the Chrome Web Store.<br />
+							<br />
+							Known issue: In Firefox sound and alarm functionality will go inactive after some time if the browser window loses focus or system goes idle.  Use other HTML5 capable browsers or the <a href="https://chrome.google.com/webstore/detail/hnamckajkcpfjdcddjopahafbdanijnp" target="_blank">MiViAm App for Chrome</a> for optimal performance.
+						</div>
+						<br />
+						<!-- End web code: browser notes -->
+						Questions / comments please write <a href="mailto:mcy001@gmail.com?subject=miviam">mcy001@gmail.com</a>.
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Begin web code: social -->
+		<div id="socialCode">
+			<span class='st_facebook_large' displayText='Facebook'></span>
+			<span class='st_twitter_large' displayText='Tweet'></span>
+			<span class='st_pinterest_large' displayText='Pinterest'></span>
+			<span class='st_googleplus_large' displayText='Google +'></span>
+			<span class='st_email_large' displayText='Email'></span>
+		</div>
+		<!-- End web code: social -->
+		<br />&nbsp;
+		
+		<audio id="vinylLoop" preload="auto">
+			<source src="snd/vinyl_noise_mono.mp3" type="audio/mp3"></source>
+			<source src="snd/vinyl_noise_mono.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass1" preload="auto">
+			<source src="snd/bass1.mp3" type="audio/mp3"></source>
+			<source src="snd/bass1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass2" preload="auto">
+			<source src="snd/bass2.mp3" type="audio/mp3"></source>
+			<source src="snd/bass2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass3" preload="auto">
+			<source src="snd/bass3.mp3" type="audio/mp3"></source>
+			<source src="snd/bass3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass4" preload="auto">
+			<source src="snd/bass4.mp3" type="audio/mp3"></source>
+			<source src="snd/bass4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass5" preload="auto">
+			<source src="snd/bass5.mp3" type="audio/mp3"></source>
+			<source src="snd/bass5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument bass" id="bass6" preload="auto">
+			<source src="snd/bass6.mp3" type="audio/mp3"></source>
+			<source src="snd/bass6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello1" preload="auto">
+			<source src="snd/cello1.mp3" type="audio/mp3"></source>
+			<source src="snd/cello1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello2" preload="auto">
+			<source src="snd/cello2.mp3" type="audio/mp3"></source>
+			<source src="snd/cello2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello3" preload="auto">
+			<source src="snd/cello3.mp3" type="audio/mp3"></source>
+			<source src="snd/cello3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello4" preload="auto">
+			<source src="snd/cello4.mp3" type="audio/mp3"></source>
+			<source src="snd/cello4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello5" preload="auto">
+			<source src="snd/cello5.mp3" type="audio/mp3"></source>
+			<source src="snd/cello5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument cello" id="cello6" preload="auto">
+			<source src="snd/cello6.mp3" type="audio/mp3"></source>
+			<source src="snd/cello6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument flute" id="flute1" preload="auto">
+			<source src="snd/flute1.mp3" type="audio/mp3"></source>
+			<source src="snd/flute1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument flute" id="flute2" preload="auto">
+			<source src="snd/flute2.mp3" type="audio/mp3"></source>
+			<source src="snd/flute2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument flute" id="flute3" preload="auto">
+			<source src="snd/flute3.mp3" type="audio/mp3"></source>
+			<source src="snd/flute3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument flute" id="flute4" preload="auto">
+			<source src="snd/flute4.mp3" type="audio/mp3"></source>
+			<source src="snd/flute4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument flute" id="flute5" preload="auto">
+			<source src="snd/flute5.mp3" type="audio/mp3"></source>
+			<source src="snd/flute5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings1" preload="auto">
+			<source src="snd/m300strings1.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings2" preload="auto">
+			<source src="snd/m300strings2.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings3" preload="auto">
+			<source src="snd/m300strings3.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings4" preload="auto">
+			<source src="snd/m300strings4.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings5" preload="auto">
+			<source src="snd/m300strings5.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument m300Strings" id="m300Strings6" preload="auto">
+			<source src="snd/m300strings6.mp3" type="audio/mp3"></source>
+			<source src="snd/m300strings6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes1" preload="auto">
+			<source src="snd/rhodes1.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes2" preload="auto">
+			<source src="snd/rhodes2.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes3" preload="auto">
+			<source src="snd/rhodes3.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes4" preload="auto">
+			<source src="snd/rhodes4.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes5" preload="auto">
+			<source src="snd/rhodes5.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument rhodes" id="rhodes6" preload="auto">
+			<source src="snd/rhodes6.mp3" type="audio/mp3"></source>
+			<source src="snd/rhodes6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes1" preload="auto">
+			<source src="snd/vibes1.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes2" preload="auto">
+			<source src="snd/vibes2.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes3" preload="auto">
+			<source src="snd/vibes3.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes4" preload="auto">
+			<source src="snd/vibes4.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes5" preload="auto">
+			<source src="snd/vibes5.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument vibes" id="vibes6" preload="auto">
+			<source src="snd/vibes6.mp3" type="audio/mp3"></source>
+			<source src="snd/vibes6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola1" preload="auto">
+			<source src="snd/viola1.mp3" type="audio/mp3"></source>
+			<source src="snd/viola1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola2" preload="auto">
+			<source src="snd/viola2.mp3" type="audio/mp3"></source>
+			<source src="snd/viola2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola3" preload="auto">
+			<source src="snd/viola3.mp3" type="audio/mp3"></source>
+			<source src="snd/viola3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola4" preload="auto">
+			<source src="snd/viola4.mp3" type="audio/mp3"></source>
+			<source src="snd/viola4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola5" preload="auto">
+			<source src="snd/viola5.mp3" type="audio/mp3"></source>
+			<source src="snd/viola5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument viola" id="viola6" preload="auto">
+			<source src="snd/viola6.mp3" type="audio/mp3"></source>
+			<source src="snd/viola6.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins1" preload="auto">
+			<source src="snd/violins1.mp3" type="audio/mp3"></source>
+			<source src="snd/violins1.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins2" preload="auto">
+			<source src="snd/violins2.mp3" type="audio/mp3"></source>
+			<source src="snd/violins2.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins3" preload="auto">
+			<source src="snd/violins3.mp3" type="audio/mp3"></source>
+			<source src="snd/violins3.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins4" preload="auto">
+			<source src="snd/violins4.mp3" type="audio/mp3"></source>
+			<source src="snd/violins4.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins5" preload="auto">
+			<source src="snd/violins5.mp3" type="audio/mp3"></source>
+			<source src="snd/violins5.ogg" type="audio/ogg"></source>
+		</audio>
+		<audio class="instrument violins" id="violins6" preload="auto">
+			<source src="snd/violins6.mp3" type="audio/mp3"></source>
+			<source src="snd/violins6.ogg" type="audio/ogg"></source>
+		</audio>
+	</body>
+</html>

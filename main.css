@@ -1,0 +1,33 @@
+body, input {font-size:1em; font-family:Verdana, Geneva, Arial, Helvetica, sans-serif; font-weight:bold;}
+.label {color:#ffffff}
+.centered {text-align:center}
+body {background-image:url(img/bg.jpg); padding:0; margin:0;}
+#showSettings,#hideSettings,a {color:#ffffff; font-size:12px; font-weight:normal; text-decoration:underline; cursor:pointer}
+
+#mainContainer {
+	padding:20px;
+	max-width:626px;
+	width:80%;
+	margin:5px auto;
+	border-radius:10px;
+	background-image: url(img/content_bg.png);
+}
+
+input {margin:0}
+
+.notes {font-size:12px; font-weight:normal; color:#ffffff; max-width:500px; width:100%; margin:0 auto; text-align:center}
+
+#titleImage {max-width:626px; width:100%}
+
+.mainControl {width:200px; text-align: center;}
+
+#controls {display:none}
+#loadingIndicator {width:200px; margin:0 auto; position:relative; margin-bottom:20px}
+#loadingLabel {text-align:center; z-index:200; position:absolute; width:200px}
+#loadingProgressBar {z-index:100; position:absolute; background-color:#2850FF; width:0%}
+table {margin:0 auto}
+td {vertical-align:middle}
+#settings {display:none;}
+#hideSettings {display:none}
+#basicControlsTable {width:130px;}
+#sleepButton {width:130px;}
