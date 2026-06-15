@@ -1,0 +1,26 @@
+{
+	"manifest_version": 3,
+	"name": "MiViAm: Mike's Vintage Ambient",
+	"version": "1.0",
+	"description": "A simple, soothing ambient sound-chimes app with a sleep timer. Opens in its own tab; works fully offline.",
+	"icons": {
+		"192": "img/icon-192.png",
+		"512": "img/icon-512.png"
+	},
+	"action": {
+		"default_title": "Open MiViAm",
+		"default_icon": {
+			"192": "img/icon-192.png",
+			"512": "img/icon-512.png"
+		}
+	},
+	"background": {
+		"scripts": ["background.js"]
+	},
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "miviam@mikeyoung.org",
+			"strict_min_version": "115.0"
+		}
+	}
+}

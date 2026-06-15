@@ -1,0 +1,23 @@
+{
+  "id": "/miviam-web/",
+  "name": "MiViAm: Mike's Vintage Ambient",
+  "short_name": "MiViAm",
+  "description": "Soothing ambient sound chimes with a sleep timer.",
+  "lang": "en-US",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#467de2",
+  "theme_color": "#2850FF",
+  "categories": ["music", "lifestyle", "health"],
+  "related_applications": [
+    { "platform": "webapp", "url": "https://mikeyoung.org/miviam/manifest.webmanifest" }
+  ],
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

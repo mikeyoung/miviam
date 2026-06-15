@@ -1,0 +1,639 @@
+/* Sans-serif everywhere — selects don't inherit the body font, so they are
+   listed explicitly alongside body and inputs (user 2026-06-10). */
+body, input, select {
+	font-size:18px;       /* desktop/base reading size (bumped from 16px) */
+	font-family:Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-weight:bold;
+}
+
+#mainContainer {
+	border-radius:10px;
+}
+
+.label {
+	color:#ffffff;
+}
+
+.centered {
+	text-align:center;
+}
+
+/* Mode / Chord Tone / Note rows: each column is as wide as its longest
+   content, so centred cells drift apart — right-align the labels and
+   left-align the selects so every label sits next to its control
+   (user 2026-06-11). */
+.modeTable td.label {
+	text-align:right;
+}
+.modeTable td:last-child {
+	text-align:left;
+}
+
+body {
+	background-color:#1a2c4e;            /* medium-dark blue — fallback only if bg.jpg fails to load */
+	background-image:url(img/bg.jpg);    /* primary background; painted over the colour above */
+	padding:0;
+	margin:0;
+	text-align:center;                   /* ALL text centred (user 2026-06-10) */
+}
+
+#showSettings,
+#hideSettings,
+a {
+	color:#ffffff;
+	font-size:12px;
+	font-weight:normal;
+	text-decoration:underline;
+	cursor:pointer;
+}
+
+/* The advanced-settings toggle is a primary control — render the show/hide
+   links noticeably larger than ordinary links (user 2026-06-10). */
+#showSettings,
+#hideSettings {
+	font-size:17px;
+}
+
+#mainContainer {
+	padding:20px;
+	/* Simple fixed cap — sliders are container-relative (60% / 90%, v51), so
+	   the card never needs to grow to accommodate them. */
+	max-width:626px;
+	width:80%;
+	margin:5px auto;
+	border-radius:10px;
+	background-image: url(img/content_bg.png);
+}
+
+input {
+	margin:0;
+}
+
+/* Off-white controls (user 2026-06-11): the buttons and the dropdowns drop
+   the system look for a flat, warm off-white. appearance:none only on the
+   BUTTONS — selects keep it native so the dropdown arrow survives; range
+   sliders are untouched (they have their own custom track/thumb styling). */
+input[type="button"] {
+	-webkit-appearance:none;
+	appearance:none;
+	/* The 3 s Recall hold (Memory clear) must read as a button press, not a
+	   text-selection / callout gesture on touch devices. */
+	-webkit-touch-callout:none;
+	-webkit-user-select:none;
+	user-select:none;
+	touch-action:manipulation;
+}
+input[type="button"],
+select {
+	background-color:#f5f2e9;
+	color:#222222;
+	border:1px solid #b9b3a4;
+	border-radius:6px;
+	padding:6px 14px;
+}
+select {
+	padding:6px 8px;             /* the native arrow supplies its own right inset */
+}
+input[type="button"]:disabled {
+	opacity:0.45;                /* disabled transport stays visibly inert */
+}
+
+/* A pressed button glows like a flashing instrument title (user
+   2026-06-12): the title flash's two-layer yellow glow, carried by the
+   BUTTON BODY (box-shadow — user 2026-06-12 moved it off the text), with
+   the matching transparent resting shadow so the 0.2s fade animates both
+   ways. Applies to the off-white buttons AND the +/− box toggles for the
+   length of the press. (iOS only grants :active when a touch listener
+   exists — main.js registers a no-op touchstart for exactly this.) */
+input[type="button"],
+.settingsBoxToggle,
+.memoryTitlePencil {
+	box-shadow:0 0 6px rgba(255, 255, 0, 0), 0 0 14px rgba(255, 255, 0, 0);
+	transition:box-shadow 0.2s ease;
+}
+input[type="button"]:active:not(:disabled),
+.settingsBoxToggle:active,
+.memoryTitlePencil:active {
+	box-shadow:0 0 6px rgba(255, 255, 0, 1), 0 0 14px rgba(255, 255, 0, 0.9);
+}
+
+/* Solo/Mute (instrument drawers) and Store/Recall (Memory drawer) button
+   pairs: side by side, equal widths, inheriting the off-white button look. */
+.soloMuteRow,
+.memoryRow {
+	display:flex;
+	gap:10px;
+	justify-content:center;
+	margin:10px auto 2px auto;
+	width:90%;                   /* matches the drawer sliders' width */
+}
+.memoryRow {
+	margin:6px auto;
+}
+.memoryHint {
+	font-size:16px;              /* matches .notes (the bottom description) at EVERY tier —
+	                                the <=600px clamp below lists .memoryHint alongside .notes */
+	font-weight:normal;
+	color:#ffffff;
+	width:90%;
+	margin:10px auto 4px auto;
+	padding-top:10px;            /* breathing room above the hint (user 2026-06-12) */
+	text-align:center;
+}
+
+/* Editable profile titles (user 2026-06-12): each Store/Recall pair is headed
+   by its name — title-styled text a notch under the 1.15em box titles — plus
+   a white pencil. The pencil swaps the name for the text field (the row's
+   .editing class flips which is visible); Enter or a press anywhere outside
+   commits and persists (memoryTitle1..3 — wiring in main.js). */
+.memoryTitleRow {
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	gap:6px;
+	width:90%;
+	margin:10px auto 0 auto;
+}
+.memoryTitle {
+	color:#ffffff;
+	font-size:1em;               /* slightly smaller than the 1.15em titles */
+	min-width:0;                 /* long names wrap instead of pushing the pencil out */
+}
+.memoryTitlePencil {
+	flex:0 0 auto;
+	background:none;
+	border:none;
+	margin:0;
+	padding:4px 6px;
+	line-height:0;
+	cursor:pointer;
+	-webkit-touch-callout:none;
+	-webkit-user-select:none;
+	user-select:none;
+	touch-action:manipulation;
+}
+.memoryTitlePencil svg {
+	width:14px;
+	height:14px;
+	fill:#ffffff;
+}
+.memoryTitleEdit {
+	display:none;
+	width:70%;
+	max-width:240px;
+	font-size:16px;              /* >=16px so iOS doesn't zoom the focused field */
+	text-align:center;
+	color:#222222;
+	background-color:#f5f2e9;
+	border:1px solid #b9b3a4;
+	border-radius:6px;
+	padding:4px 8px;
+}
+.memoryTitleRow.editing .memoryTitle,
+.memoryTitleRow.editing .memoryTitlePencil {
+	display:none;
+}
+.memoryTitleRow.editing .memoryTitleEdit {
+	display:block;
+}
+.soloMuteRow input[type="button"],
+.memoryRow input[type="button"] {
+	flex:1 1 0;
+	min-width:0;
+}
+
+/* Non-destructive Mute / Unmute button (v164): a full-width toggle directly
+   under the Solo button (and at the bottom of the vinyl box). It inherits the
+   off-white button look; while engaged (muted) it fills with the theme accent
+   and reads "Unmute" so the muted state is obvious. */
+.muteButtonRow {
+	width:90%;
+	margin:8px auto 2px auto;
+	display:flex;
+}
+.muteButtonRow input[type="button"] {
+	flex:1 1 0;
+	min-width:0;
+}
+.muteButton[aria-pressed="true"] {
+	background-color:#2850FF;
+	color:#ffffff;
+	border-color:#2850FF;
+}
+
+.notes {
+	font-size:16px;          /* desktop/tablet size; phones scale up in the <=600px tier (user 2026-06-10) */
+	font-weight:normal;
+	color:#ffffff;
+	max-width:500px;
+	width:100%;
+	margin:0 auto;
+	text-align:left;         /* bottom text reads left-aligned (user 2026-06-11) */
+}
+
+#titleImage {
+	max-width:626px;
+	width:100%;
+}
+
+.mainControl {
+	width:200px;
+	text-align: center;
+}
+
+#controls {
+	display:none;
+}
+
+#loadingIndicator {
+	width:200px;
+	margin:0 auto;
+	position:relative;
+	margin-bottom:20px
+}
+
+#loadingLabel {
+	text-align:center;
+	z-index:200;
+	position:absolute;
+	width:200px;
+	white-space:nowrap;          /* "tuning up (NN%)..." must never line-break (user 2026-06-12) */
+}
+
+#loadingProgressBar {
+	z-index:100;
+	position:absolute;
+	background-color:#2850FF;
+	width:0%;
+}
+
+table {
+	margin:0 auto;
+}
+
+td {
+	vertical-align:middle;
+}
+
+/* Each instrument/vinyl control: label centered directly over its slider.
+   An instrument block stacks three labelled sliders (volume, then Balance and
+   Pan width on .subLabel rows). The generous vertical padding visually
+   separates one instrument's section from the next (user 2026-06-10; bumped
+   18px → 26px the same day for a little more breathing room). */
+.instrumentControl {
+	text-align:center;
+	padding:26px 0;
+}
+
+.subLabel {
+	margin-top:8px;          /* separate the Volume / Balance / Pan width rows a little */
+}
+
+/* The instrument's name heads its block (above the three sliders, v46);
+   slightly larger so the section reads as a unit. The .instrumentName span
+   inside it is the play-flash target. */
+.instrumentTitle {
+	font-size:1.15em;
+}
+
+/* Both mix tables simply span the card; everything inside is sized relative
+   to its container (no viewport units), so no fixed-layout/overflow guards
+   are needed. */
+.mixTable {
+	width:100%;
+}
+
+/* ---- sliders: medium-blue track + matching knob, custom-styled so the colours
+   are identical on every target browser. The instrument volume/balance/pan-width
+   faders and the vinyl fader all share this look. One chunky size at EVERY
+   breakpoint: 60% of the CONTAINER wide (not the viewport — user 2026-06-10),
+   34px hit-area, 8px track, 28px knob. Sliders inside a settings box are
+   widened to 90% of the box below. ---- */
+.instrumentControl input[type="range"] {
+	-webkit-appearance:none;
+	appearance:none;
+	width:60%;
+	height:34px;                 /* pointer hit-area; the visible track is thinner */
+	margin:0;
+	background:transparent;      /* the track is drawn by the pseudo-elements below */
+	vertical-align:middle;
+	cursor:pointer;
+}
+.instrumentControl input[type="range"]::-webkit-slider-runnable-track {
+	height:8px;
+	border-radius:4px;
+	background:#4a78c8;          /* medium brightness blue */
+}
+.instrumentControl input[type="range"]::-moz-range-track {
+	height:8px;
+	border-radius:4px;
+	background:#4a78c8;
+}
+.instrumentControl input[type="range"]::-moz-range-progress {
+	height:8px;
+	border-radius:4px;
+	background:#4a78c8;          /* uniform track (no separate filled colour) */
+}
+.instrumentControl input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance:none;
+	appearance:none;
+	width:28px;
+	height:28px;
+	margin-top:-10px;            /* centre the 28px knob on the 8px track */
+	border-radius:50%;
+	background:#4a78c8;          /* knob matches the default track colour */
+	border:2px solid #16284a;
+}
+.instrumentControl input[type="range"]::-moz-range-thumb {
+	width:28px;
+	height:28px;
+	border-radius:50%;
+	background:#4a78c8;          /* knob matches the default track colour */
+	border:2px solid #16284a;
+}
+
+/* ---- per-instrument settings boxes (v51) ----
+   Each instrument's three sliders (and vinyl's one) live in a collapsible
+   box beneath the instrument title: hard corners, 1px solid white border,
+   90% of the settings container wide, all text pure white. The header line
+   is always visible — a left-aligned bold summary of the current values
+   ("VOL: n   BAL: n   PAN: n", kept in sync by main.js) with a bold +/−
+   toggle button on the right. Flexbox (summary flex:1 min-width:0, button
+   flex-none, gap) guarantees the button can NEVER overlap the summary: the
+   summary wraps instead. Drawers start closed (display:none) and are
+   slid open/closed by main.js, one open at a time (accordion). */
+.settingsBox {
+	box-sizing:border-box;
+	width:90%;
+	margin:8px auto 0;
+	border:1px solid #ffffff;
+	border-radius:0;             /* hard corners */
+	color:#ffffff;
+}
+.settingsBoxHeader {
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:12px;                    /* minimum clearance between summary and button */
+	padding:10px 12px;
+}
+.settingsSummary {
+	flex:1 1 auto;
+	min-width:0;                 /* long summaries wrap rather than push the button */
+	text-align:left;
+	font-weight:bold;
+	color:#ffffff;
+}
+.settingsBoxToggle {
+	flex:0 0 auto;
+	background:none;
+	border:none;
+	margin:0;
+	padding:4px 10px;
+	color:#ffffff;
+	font-family:inherit;         /* buttons don't inherit the body font by default */
+	font-size:1.3em;
+	font-weight:bold;
+	line-height:1;
+	cursor:pointer;
+}
+.settingsBoxDrawer {
+	display:none;                /* opened/closed by main.js (slideOpen/slideClosed) */
+	padding:0 0 16px;            /* no side padding: sliders measure a true 90% of the box */
+	text-align:center;           /* labels centred over their sliders, as before */
+}
+.settingsBox input[type="range"] {
+	width:90%;                   /* of the settings box (user spec 2026-06-10) */
+}
+
+/* ---- "now playing" flash (advanced settings open only) ----
+   main.js adds .playing to JUST the instrument's NAME (the .instrumentName
+   span inside the "{Name}: {value}" label — the colon, value and surrounding
+   whitespace sit OUTSIDE the span and never glow) for 2s when one of its
+   sounds plays (re-armed on replay), then removes it. Vinyl and the Balance /
+   Pan width sub-rows are intentionally excluded. The glow is a text-shadow,
+   which renders identically on Blink, Gecko and WebKit — no iOS-specific
+   fallback needed. Glow colour = the title graphic's letter halo (#ffff00).
+   The transparent resting shadow keeps the 0.2s transition smooth (shadow
+   lists must match in length to animate). */
+.instrumentControl .instrumentName {
+	text-shadow:0 0 6px rgba(255, 255, 0, 0), 0 0 14px rgba(255, 255, 0, 0);
+	transition:text-shadow 0.2s ease;
+}
+.instrumentControl .instrumentName.playing {
+	text-shadow:0 0 6px rgba(255, 255, 0, 1), 0 0 14px rgba(255, 255, 0, 0.9);
+}
+
+#settings {
+	display:none;
+}
+
+#hideSettings {
+	display:none;
+}
+
+#basicControlsTable {
+	width:130px;
+}
+
+/* Start and Stop sat flush against each other on desktop (the table is
+   exactly two buttons wide) — open the same 15px gap between them that
+   separates Start from Sleep vertically (the .mainControl margin). The
+   table simply grows past its 130px ideal to fit; on phones, where the
+   cells already spread across up to 300px, the padding is inert in-cell
+   space and nothing moves. */
+#basicControlsTable td:first-child {
+	padding-right:15px;
+}
+
+#sleepButton {
+	width:130px;
+}
+
+/* ---- PWA install affordance + installed popup ---- */
+/* The in-settings "Install Locally" button is the app's ONLY install
+   affordance (the proactive prompt modal was removed — user 2026-06-11);
+   it matches the app's other buttons (Start/Stop/Sleep/Reset). */
+#installLocallyRow {
+	display:none;            /* settings button — shown by JS only while installable */
+	text-align:center;
+}
+
+#installLocallyHint {
+	/* Always-visible PWA description above the button (user 2026-06-11 —
+	   it was a hidden fallback before the copy rewrite). */
+	margin-bottom:8px;
+}
+
+/* ---- installed confirmation: a centred card over a dim backdrop ----
+   (#installedModal — shown on appinstalled.) position:fixed ⇒ floats over
+   the page, so it is never buried at the foot of the card. */
+#installedModal {
+	display:none;
+	position:fixed;
+	inset:0;
+	z-index:1100;
+	background-color:rgba(0, 0, 0, 0.55);  /* dim backdrop */
+	align-items:center;
+	justify-content:center;
+	padding:20px;
+	box-sizing:border-box;
+}
+#installedModal.show {
+	display:flex;
+}
+#installedModalCard {
+	box-sizing:border-box;
+	width:100%;
+	max-width:340px;
+	background-color:#1a2c4e;           /* the app's dark-blue theme */
+	color:#ffffff;
+	text-align:center;
+	padding:22px 20px;
+	border:2px solid #4a78c8;
+	border-radius:12px;
+	box-shadow:0 6px 28px rgba(0, 0, 0, 0.5);
+}
+#installedModalTitle {
+	font-size:18px;
+	font-weight:bold;
+	margin-bottom:12px;
+}
+.installModalText {
+	font-size:13px;
+	font-weight:normal;
+	line-height:1.4;
+	margin:0 0 18px 0;
+}
+.installModalButtons {
+	display:flex;
+	gap:10px;
+	justify-content:center;
+	flex-wrap:wrap;
+}
+.installModalButtons input[type="button"] {
+	padding:8px 16px;
+}
+
+/* ============================================================
+   Responsive breakpoints — size fonts, inputs & layout for the
+   standard device classes. Desktop-first: everything above is
+   the base (desktops / laptops / landscape tablets, ~601px+);
+   the queries below adapt DOWN for phones and UP for large
+   monitors. The single column is capped at a 626px inner width
+   (#mainContainer max-width), so very wide screens just centre
+   that column — there only the fonts grow — while the real
+   layout work happens at the phone sizes.
+   ============================================================ */
+
+/* ---- Large desktops / external monitors (>=1200px) ----
+   Nudge the reading sizes up; the column stays at its capped
+   design width, so this is a font-only tier. */
+@media (min-width: 1200px) {
+	body, input, select {
+		font-size:19px;
+	}
+	a {
+		font-size:14px;
+	}
+	#showSettings,
+	#hideSettings {
+		font-size:18px;
+	}
+}
+
+/* ---- Portrait tablets & landscape phones (<=768px) ----
+   Let the card breathe into a little more of the viewport. */
+@media (max-width: 768px) {
+	#mainContainer {
+		width:86%;
+	}
+}
+
+/* ---- Phones (<=600px): bigger fluid type + finger-size controls ----
+   Fonts use clamp(min, vw, max): both the text AND the card width scale
+   with the viewport, so the longest label ("Vinyl surface volume") keeps
+   the same fit ratio at every width — large on roomy phones, never
+   wrapping or overflowing on small ones. Inputs are enlarged for touch. */
+@media (max-width: 600px) {
+	#mainContainer {
+		box-sizing:border-box;
+		width:92%;
+		padding:14px;
+	}
+	body, input, select {
+		font-size:clamp(19px, 5.5vw, 24px);
+	}
+	a {
+		font-size:clamp(14px, 4vw, 17px);
+	}
+	#showSettings,
+	#hideSettings {
+		font-size:clamp(18px, 5vw, 21px);
+	}
+	/* The bottom notes stayed a fixed 16px while the body type scaled up,
+	   which read way too small on phones (user 2026-06-10) — match the
+	   mobile body type instead. The memory hint tracks .notes at every
+	   tier (user 2026-06-12). */
+	.notes,
+	.memoryHint {
+		font-size:clamp(19px, 5.5vw, 24px);
+	}
+	/* Sliders: no width override — the base container-relative widths
+	   (60%, 90% inside settings boxes) apply at every breakpoint. */
+	/* Native buttons are tiny — make them big, tappable blocks. */
+	input[type="button"] {
+		min-height:52px;
+		padding:12px 18px;
+	}
+	#basicControlsTable,
+	.mainControl {
+		width:100%;
+		max-width:300px;
+	}
+	#sleepButton {
+		width:100%;
+	}
+	/* font-size >=16px also blocks iOS Safari's focus-zoom on the select. */
+	#totalSoundsSelect,
+	#modeSelect,
+	#chordToneSelect,
+	#classicNoteSelect {
+		font-size:clamp(19px, 5.5vw, 23px);
+		padding:8px 10px;
+	}
+	/* Box summaries must NEVER wrap (user 2026-06-10). Per tier: the LARGEST
+	   whole-px size whose widest reachable text (VOL: 100   BAL: R50
+	   PAN: 100 — Verdana digits are tabular, R is the wide letter) stays one
+	   line at the tier's NARROWEST viewport. Measured headless: 16px at
+	   481px. */
+	.settingsSummary {
+		font-size:16px;
+	}
+}
+
+/* ---- Phones, portrait (<=480px) ----
+   Tighten the card so more of the width is usable content. */
+@media (max-width: 480px) {
+	#mainContainer {
+		width:94%;
+		padding:12px;
+	}
+	/* Summary no-wrap ladder (see <=600px tier): 11px fits at 361px. */
+	.settingsSummary {
+		font-size:11px;
+	}
+}
+
+/* ---- Small phones (<=360px): nearly full width + minimal padding,
+   giving the fluid type above the most room to stay single-line. ---- */
+@media (max-width: 360px) {
+	#mainContainer {
+		width:97%;
+		padding:9px;
+	}
+	/* Summary no-wrap ladder (see <=600px tier): 10px fits at 320px. */
+	.settingsSummary {
+		font-size:10px;
+	}
+}

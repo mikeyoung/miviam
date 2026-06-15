@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>MiViAm: Mike's Vintage Ambient</title>
+		<meta charset="utf-8" />
+
+		<link rel="image_src" href="img/square_logo.jpg"/>
+		<meta name="description" content="MiViAm is a simple, soothing sound chimes app which features a sleep timer." />
+		<meta name="author" content="Mike Young" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="manifest" href="manifest.webmanifest" />
+		<meta name="theme-color" content="#2850FF" />
+		<link rel="apple-touch-icon" href="img/apple-touch-icon-180.png" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+		<meta name="apple-mobile-web-app-title" content="MiViAm" />
+
+		<link rel="stylesheet" href="main.css?v=47" />
+	</head>
+	<body>
+		<div id="mainContainer">
+			<img src="img/title.png" id="titleImage" alt="MiViAm: Mike's Vintage Ambient" />
+			<div id="loadingIndicator" class="label" style="text-align: center">
+				<div id="loadingLabel">tuning up</div>
+				<div id="loadingProgressBar">&nbsp;</div>
+			</div>
+			<div id="controls">
+				<table id="basicControlsTable" cellpadding="0" cellspacing="0">
+					<tr>
+						<td style="text-align:left;"><input id="startButton" type="button" value="Start" autocomplete="off" /></td>
+						<td style="text-align:right;"><input id="stopButton" type="button" value="Stop" disabled="disabled" autocomplete="off" /></td>
+					</tr>
+				</table>
+				<div class="mainControl" style="margin:15px auto 0 auto"><input id="sleepButton" type="button" value="Sleep" autocomplete="off" /></div>
+				<br />
+				<div style="text-align:center">
+					<span id="showSettings">Open Options &amp; Info</span>
+					<span id="hideSettings">Close Options &amp; Info</span>
+				</div>
+				<div id="settings">
+					<br /><br />
+					<!-- Playback mode (v72): "Chord" = the chord-wheel sampler engine
+					     (60 s chord states, then a brief silent gap so two chords
+					     never overlap); "Classic" = the original ambient texture, now
+					     drawn from the same sampler (selected note, random octave).
+					     Persisted; default Chord. -->
+					<table class="modeTable">
+						<tr>
+							<td class="label">Mode:&nbsp;</td>
+							<td>
+								<select id="modeSelect">
+									<option value="chord" selected="selected">Chord</option>
+									<option value="classic">Classic</option>
+								</select>
+							</td>
+						</tr>
+						<!-- Chord quality (v73): visible only while Chord mode is active;
+						     drives the note pool, live. -->
+						<tr id="chordToneRow">
+							<td class="label">Chord Tone:&nbsp;</td>
+							<td>
+								<!-- Title-case display labels (user 2026-06-11); the VALUES stay
+								     the CHORD_FORMULAS keys (or "RANDOM") — they are persisted
+								     (chordTone) and validated on restore, so they must not change.
+								     "Random" (default, user 2026-06-14) is NOT a formula: each
+								     3-min chord then picks one of the five at random. -->
+								<select id="chordToneSelect">
+									<option value="RANDOM" selected="selected">Random</option>
+									<option value="MAJOR">Major</option>
+									<option value="MINOR">Minor</option>
+									<option value="DOM_7">Dom 7</option>
+									<option value="MAJ_7">Maj 7</option>
+									<option value="SUS_4">Sus 4</option>
+								</select>
+							</td>
+						</tr>
+						<!-- Classic note (v74): visible only while Classic mode is active;
+						     the single note classic playback perpetuates (random octave). -->
+						<tr id="classicNoteRow">
+							<td class="label">Note:&nbsp;</td>
+							<td>
+								<select id="classicNoteSelect">
+									<option value="G" selected="selected">G</option>
+									<option value="G#">G#</option>
+									<option value="A">A</option>
+									<option value="A#">A#</option>
+									<option value="B">B</option>
+									<option value="C">C</option>
+									<option value="C#">C#</option>
+									<option value="D">D</option>
+									<option value="D#">D#</option>
+									<option value="E">E</option>
+									<option value="F">F</option>
+									<option value="F#">F#</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<table class="mixTable">
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle">Main Volume</div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="masterSummary">VOL: 100</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Main volume settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="masterVolVal" class="volVal">100</span></div>
+										<input id="masterVol" class="masterVol" type="range" min="0" max="100" step="1" value="100" />
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="label centered"><br />- Instruments -<br /></td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Bass</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="bassSummary">VOL: 100&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Bass settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="bassVolVal" class="volVal">100</span></div>
+										<input id="bassVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="100" />
+										<div class="label centered subLabel">Balance: <span id="bassBalanceVal" class="volVal">0</span></div>
+										<input id="bassBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="bassPanWidthVal" class="volVal">25</span></div>
+										<input id="bassPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="bass" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="bass" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Flute</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="fluteSummary">VOL: 50&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Flute settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="fluteVolVal" class="volVal">50</span></div>
+										<input id="fluteVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="50" />
+										<div class="label centered subLabel">Balance: <span id="fluteBalanceVal" class="volVal">0</span></div>
+										<input id="fluteBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="flutePanWidthVal" class="volVal">25</span></div>
+										<input id="flutePanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="flute" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="flute" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Rhodes</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="rhodesSummary">VOL: 100&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Rhodes settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="rhodesVolVal" class="volVal">100</span></div>
+										<input id="rhodesVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="100" />
+										<div class="label centered subLabel">Balance: <span id="rhodesBalanceVal" class="volVal">0</span></div>
+										<input id="rhodesBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="rhodesPanWidthVal" class="volVal">25</span></div>
+										<input id="rhodesPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="rhodes" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="rhodes" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Vibes</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="vibesSummary">VOL: 80&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vibes settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="vibesVolVal" class="volVal">80</span></div>
+										<input id="vibesVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="80" />
+										<div class="label centered subLabel">Balance: <span id="vibesBalanceVal" class="volVal">0</span></div>
+										<input id="vibesBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="vibesPanWidthVal" class="volVal">25</span></div>
+										<input id="vibesPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="vibes" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="vibes" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Celeste</span></div>
+									<div class="settingsBox">
+										<div class="settingsBoxHeader">
+											<span class="settingsSummary" id="celesteSummary">VOL: 30&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+											<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Celeste settings">+</button>
+										</div>
+										<div class="settingsBoxDrawer">
+											<div class="label centered subLabel">Volume: <span id="celesteVolVal" class="volVal">30</span></div>
+											<input id="celesteVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="30" />
+											<div class="label centered subLabel">Balance: <span id="celesteBalanceVal" class="volVal">0</span></div>
+											<input id="celesteBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+											<div class="label centered subLabel">Width: <span id="celestePanWidthVal" class="volVal">25</span></div>
+											<input id="celestePanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+											<div class="soloMuteRow">
+												<input type="button" class="soloButton" data-prefix="celeste" value="Solo" />
+												<input type="button" class="muteButton" data-prefix="celeste" value="Mute" aria-pressed="false" />
+											</div>
+										</div>
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="2" class="instrumentControl">
+									<div class="label centered instrumentTitle"><span class="instrumentName">Cello</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="celloSummary">VOL: 40&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Cello settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="celloVolVal" class="volVal">40</span></div>
+										<input id="celloVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="40" />
+										<div class="label centered subLabel">Balance: <span id="celloBalanceVal" class="volVal">0</span></div>
+										<input id="celloBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="celloPanWidthVal" class="volVal">25</span></div>
+										<input id="celloPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="cello" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="cello" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Violins</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="violinsSummary">VOL: 5&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Violins settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="violinsVolVal" class="volVal">5</span></div>
+										<input id="violinsVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="5" />
+										<div class="label centered subLabel">Balance: <span id="violinsBalanceVal" class="volVal">0</span></div>
+										<input id="violinsBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="violinsPanWidthVal" class="volVal">25</span></div>
+										<input id="violinsPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="violins" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="violins" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle"><span class="instrumentName">Choir</span></div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="choirSummary">VOL: 10&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Choir settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="choirVolVal" class="volVal">10</span></div>
+										<input id="choirVol" class="instrumentVol" type="range" min="0" max="100" step="1" value="10" />
+										<div class="label centered subLabel">Balance: <span id="choirBalanceVal" class="volVal">0</span></div>
+										<input id="choirBalance" class="instrumentBalance" type="range" min="1" max="101" step="1" value="51" />
+										<div class="label centered subLabel">Width: <span id="choirPanWidthVal" class="volVal">25</span></div>
+										<input id="choirPanWidth" class="instrumentPanWidth" type="range" min="0" max="100" step="1" value="25" />
+										<div class="soloMuteRow">
+											<input type="button" class="soloButton" data-prefix="choir" value="Solo" />
+											<input type="button" class="muteButton" data-prefix="choir" value="Mute" aria-pressed="false" />
+										</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<table class="mixTable">
+						<tr>
+							<td colspan="2" class="label centered"><br />- Ambience -<br /></td>
+						</tr>
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle">Vinyl</div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="vinylSummary">VOL: 15</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vinyl settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="label centered subLabel">Volume: <span id="vinylVolVal" class="volVal">15</span></div>
+										<input id="vinylVol" class="vinylVol" type="range" min="0" max="100" step="1" value="15" />
+										<div class="muteButtonRow"><input type="button" class="muteButton" data-prefix="vinyl" value="Mute" aria-pressed="false" /></div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<table>
+						<tr>
+							<td class="label">Chime Frequency:&nbsp;</td>
+							<td>
+								<select id="totalSoundsSelect">
+									<option value="1">1</option>
+									<option value="2">2</option>
+									<option value="3">3</option>
+									<option value="4">4</option>
+									<option value="5">5</option>
+									<option value="6">6</option>
+									<option value="7" selected="selected">7</option>
+								</select>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<div class="label centered">
+						<label>Speed: <select id="speedSelect"><option value="normal">Normal</option><option value="slow">Slow</option><option value="mixed" selected="selected">Mixed</option></select></label>
+					</div>
+					<br />
+					<div class="label centered">
+						<label>Direction: <select id="directionSelect"><option value="forward">Forward</option><option value="reversed">Reversed</option><option value="mixed" selected="selected">Mixed</option></select></label>
+					</div>
+					<br />
+					<div class="label centered">
+						<label>Delay: <input type="checkbox" id="delayCheck" autocomplete="off" checked /></label>
+					</div>
+					<br />
+					<!-- Memory (v117): five permanent PRESETS + four profile slots.
+					     The preset buttons (Default / Space Opera / Classic / Celestial /
+					     Chamber) are plain recalls of factory mixes baked into main.js — no
+					     Store, no title, no pencil, nothing to clear. "Default" replaced the
+					     old "Reset to default" button (2026-06-14). Slots 3..6: Store N saves the whole
+					     mix EXCEPT main volume (instrument volume/balance/width, vinyl,
+					     chime frequency, mode + both mode fields) behind a system
+					     confirm; Recall N applies it. Slots persist (memory3..6); an
+					     empty slot falls back to app defaults, so Recall is never
+					     disabled. Each slot is headed by an editable title (v115):
+					     main.js fills the spans from memoryTitle3..6 — the pencil swaps
+					     in the text field; Enter or a press anywhere outside commits
+					     and persists. -->
+					<table class="mixTable">
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle">Memory</div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="memorySummary">Profiles</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Memory settings">+</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="memoryRow">
+											<input type="button" id="memPreset9" value="Default" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memPreset1" value="Space Opera" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memPreset2" value="Classic" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memPreset7" value="Celestial" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memPreset8" value="Chamber" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow3">
+											<span class="memoryTitle" id="memTitle3"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil3" aria-label="Edit profile 3 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit3" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore3" value="Store" />
+											<input type="button" id="memRecall3" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow4">
+											<span class="memoryTitle" id="memTitle4"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil4" aria-label="Edit profile 4 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit4" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore4" value="Store" />
+											<input type="button" id="memRecall4" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow5">
+											<span class="memoryTitle" id="memTitle5"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil5" aria-label="Edit profile 5 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit5" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore5" value="Store" />
+											<input type="button" id="memRecall5" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow6">
+											<span class="memoryTitle" id="memTitle6"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil6" aria-label="Edit profile 6 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit6" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore6" value="Store" />
+											<input type="button" id="memRecall6" value="Recall" />
+										</div>
+										<div class="memoryHint">To clear a profile, press on its recall button for three or more seconds.</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<br />
+					<div id="installLocallyRow">
+						<div id="installLocallyHint" class="notes">This is a progressive web app and can be installed locally and run offline with PWA enabled browsers.</div>
+						<input type="button" id="installLocallyButton" value="Install Locally" />
+					</div>
+					<br />
+					<div class="notes">
+						<div>
+							MiViAm plays an endless, ever-changing sequence of warm Mellotron tones.<br><br>
+							Each instrument can be mixed and panned individually.<br /><br />
+							Balance places the instrument at a fixed spot in the stereo field.<br /><br />
+							Width is the distance a note may land away from the balance.
+						</div>
+						<br /><br>
+						<div>
+							<b>Stereochordal Edition</b><br>v2.23<br>
+						</div>
+						<br>&nbsp;
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Installed confirmation (the app's only modal — the proactive install
+		     prompt was removed, user 2026-06-11; installs run from the Advanced
+		     settings button). Auto-hides after 8s; OK or a backdrop tap closes
+		     it sooner. -->
+		<div id="installedModal" role="dialog" aria-modal="true" aria-labelledby="installedModalTitle">
+			<div id="installedModalCard">
+				<div id="installedModalTitle">MiViAm installed</div>
+				<p class="installModalText">&#10003; MiViAm is installed &mdash; it's now available to use offline, anytime.</p>
+				<div class="installModalButtons">
+					<input type="button" id="installedModalClose" value="OK" />
+				</div>
+			</div>
+		</div>
+
+		<audio id="vinylLoop" preload="auto">
+			<source src="snd/vinyl_noise.mp3" type="audio/mpeg"></source>
+		</audio>
+		<!-- Second vinyl bed instance: the SAME file, played channel-swapped
+		     (L/R crossed via Web Audio) and started 4-9 s after the first, each
+		     instance at half level - a decorrelated pair that widens the bed
+		     without raising its loudness. No controls; it follows #vinylVol. -->
+		<audio id="vinylLoop2" preload="auto">
+			<source src="snd/vinyl_noise.mp3" type="audio/mpeg"></source>
+		</audio>
+		<!-- Ghost keep-alive track: the FILE is pure silence, played unmuted at
+		     volume 1 (iOS ignores element.volume and treats muted media as
+		     non-audible, so silencing the element instead of the file would not
+		     hold the audio session). Never routed through the AudioContext and
+		     attached to no controls — it gives the OS a plain audible media
+		     element whenever the app plays, anchoring background / lock-screen
+		     playback even if Web Audio gets suspended. -->
+		<audio id="keepAliveLoop" loop preload="auto">
+			<source src="snd/silence.wav" type="audio/wav"></source>
+		</audio>
+		<script src="js/main.js?v=110"></script>
+	</body>
+</html>
