@@ -1458,8 +1458,8 @@
 	// balance / width (muted = volume 0), the vinyl volume, the chime frequency,
 	// the mode and both mode fields (chord tone + classic note — both stored so
 	// either mode recalls intact). The PRESET buttons (Default / Space Opera /
-	// Classic / Celestial / Chamber — their names are their button labels) recall
-	// factory mixes 9/1/2/7/8 directly: no Store, no title, nothing to clear.
+	// Classic / Celestial / Chamber / Spacing Out — their names are their button labels) recall
+	// factory mixes 9/1/2/7/8/10 directly: no Store, no title, nothing to clear.
 	// "Default" (9) is the app's fresh-load defaults and replaced the old "Reset
 	// to default" button (user 2026-06-14). The SLOTS (3..6) each have Store N /
 	// Recall N; Store asks for confirmation through the system dialog first. Slots
@@ -1477,8 +1477,8 @@
 	}
 
 
-	// Factory contents: 1/2/7/8/9 are the permanent presets' mixes (Space Opera /
-	// Classic / Celestial / Chamber / Default); slots 3..6 fall through to the base
+	// Factory contents: 1/2/7/8/9/10 are the permanent presets' mixes (Space Opera /
+	// Classic / Celestial / Chamber / Default / Spacing Out); slots 3..6 fall through to the base
 	// (empty-state fallback).
 	// Built from the same constants as Reset so "default" can never drift
 	// from the app's own. The user's values are display-scale — a Balance
@@ -1556,6 +1556,13 @@
 			// every default constant; only Delay differs (LIVE default is ON via
 			// DELAY_DEFAULT, the profile base is OFF) so re-assert it, and — unlike other
 			// presets — also carry the default main volume so Default is a FULL reset.
+			p.delay = DELAY_DEFAULT;
+			p.masterVol = MASTER_DEFAULT;
+		} else if (n === 10) {
+			// "Spacing Out" (user 2026-06-15): created as a copy of Default's
+			// settings (the fresh-load defaults, incl. the full master reset).
+			// Its own branch so it can diverge from Default later without
+			// touching it. Mirrors n===9 for now.
 			p.delay = DELAY_DEFAULT;
 			p.masterVol = MASTER_DEFAULT;
 		}
@@ -1857,12 +1864,13 @@
 	}
 
 	function setupMemory() {
-		// The five permanent presets, in button order: Default (9, = the fresh-load
+		// The permanent presets, in button order: Default (9, = the fresh-load
 		// defaults, replacing the old "Reset to default"), Space Opera (1), Classic
-		// (2), Celestial (7), Chamber (8). Plain recalls of the factory mixes — no
-		// Store/title. (The 1968 preset was retired 2026-06-14; its Mixed/Mixed/
-		// chimes-7/Delay-on settings are now the app defaults.)
-		[9, 1, 2, 7, 8].forEach(function (n) {
+		// (2), Celestial (7), Chamber (8), Spacing Out (10, a copy of Default —
+		// user 2026-06-15). Plain recalls of the factory mixes — no Store/title.
+		// (The 1968 preset was retired 2026-06-14; its Mixed/Mixed/chimes-7/Delay-on
+		// settings are now the app defaults.)
+		[9, 1, 2, 7, 8, 10].forEach(function (n) {
 			qs("#memPreset" + n).addEventListener("click", function () {
 				applyMemoryProfile(defaultMemoryProfile(n));
 			});
