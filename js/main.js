@@ -1513,7 +1513,7 @@
 			p.choirVol = "100";
 			p.choirPanWidth = "28";
 			p.totalSoundsSelect = "3";
-			p.vinylVol = "30";
+			p.vinylVol = "20";
 			p.delay = true;     // user 2026-06-14: Space Opera recalls with Delay on
 		} else if (n === 2) {
 			// "Classic": classic mode on the note D; the core instruments at
@@ -1527,7 +1527,7 @@
 			p.vibesVol = "80";   p.vibesPanWidth = "25";
 			p.mode = "classic";
 			p.classicNote = "D";
-			p.vinylVol = "15";
+			p.vinylVol = "20";
 			p.totalSoundsSelect = "4";
 			p.speed = "normal";
 			p.direction = "forward";
@@ -1542,6 +1542,7 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "5";
+			p.vinylVol = "20";
 			p.delay = true;
 			p.direction = "forward";
 			p.speed = "normal";
@@ -1552,6 +1553,7 @@
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.celloVol = "100";  p.celloBalance = BALANCE_DEFAULT;  p.celloPanWidth = "20";
 			p.fluteVol = "70";   p.fluteBalance = BALANCE_DEFAULT;  p.flutePanWidth = "20";
+			p.vinylVol = "20";
 			p.mode = "chord";
 			p.chordTone = "RANDOM";
 			p.totalSoundsSelect = "4";
@@ -1573,6 +1575,7 @@
 			// masterVol, for the full reset. (Base already sets delay=false; explicit here.)
 			p.direction = "forward";
 			p.delay = false;
+			p.vinylVol = "20";
 		}
 		// Slots (3..6): the base — every value at the app's own default.
 		return p;
