@@ -222,6 +222,8 @@ input[type="button"]:active:not(:disabled),
 	margin:0;
 	padding:12px 10px;           /* taller than the 6px base button padding */
 	line-height:1.25;            /* tidy spacing for the two-line "Space Opera" */
+	font-size:16px;              /* the UA button default read too small (user 2026-06-15) */
+	font-weight:bold;
 	/* These are <button>, so they don't inherit the global input[type="button"]
 	   look — replicate the off-white button styling here. */
 	-webkit-appearance:none;
