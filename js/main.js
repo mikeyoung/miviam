@@ -87,7 +87,7 @@
 		vibesPanWidth: "25", celestePanWidth: "25", celloPanWidth: "25", violinsPanWidth: "25",
 		choirPanWidth: "25"
 	};
-	var VINYL_DEFAULT = "15";       // 101-position scale (user-set 2026-06-12)
+	var VINYL_DEFAULT = "33";       // 101-position scale (user 2026-06-16: was 15)
 	var MASTER_DEFAULT = "100";     // master volume percent (0–100)
 	var TOTAL_SOUNDS_DEFAULT = "5";   // chimes; capped at 5 globally (user 2026-06-15: dropdown max + default lowered 7->5). Was "7".
 	var MODE_DEFAULT = "chord";     // playback mode: "chord" | "classic" (user 2026-06-10)
@@ -1567,12 +1567,12 @@
 			p.delay = DELAY_DEFAULT;
 			p.masterVol = MASTER_DEFAULT;
 		} else if (n === 10) {
-			// "Drifter" (user 2026-06-15): created as a copy of Default's
-			// settings (the fresh-load defaults, incl. the full master reset).
-			// Its own branch so it can diverge from Default later without
-			// touching it. Mirrors n===9 for now.
-			p.delay = DELAY_DEFAULT;
-			p.masterVol = MASTER_DEFAULT;
+			// "Drifter" (user 2026-06-16): the default mix, but Forward direction and
+			// no Delay. A distinct mood preset now (no longer a copy of Default), so it
+			// is master-agnostic like the other presets — only Default (n===9) carries
+			// masterVol, for the full reset. (Base already sets delay=false; explicit here.)
+			p.direction = "forward";
+			p.delay = false;
 		}
 		// Slots (3..6): the base — every value at the app's own default.
 		return p;
