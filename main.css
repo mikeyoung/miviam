@@ -202,6 +202,24 @@ input[type="button"]:active:not(:disabled),
 	min-width:0;
 }
 
+/* Preset buttons (Default / Space Opera / Classic / Celestial / Chamber /
+   Wall of Tone): a 2-column grid — 3 rows of 2 — with gap spacing between
+   each button (user 2026-06-15; was six stacked full-width rows). Grid's
+   default align stretch keeps both buttons in a row equal height even when a
+   longer label wraps. */
+.presetGrid {
+	display:grid;
+	grid-template-columns:1fr 1fr;
+	gap:10px;
+	width:90%;                   /* matches the drawer rows */
+	margin:6px auto 10px auto;   /* bottom gap before the Store/Recall slots */
+}
+.presetGrid input[type="button"] {
+	width:100%;
+	min-width:0;
+	margin:0;
+}
+
 /* Non-destructive Mute / Unmute button (v164): a full-width toggle directly
    under the Solo button (and at the bottom of the vinyl box). It inherits the
    off-white button look; while engaged (muted) it fills with the theme accent
