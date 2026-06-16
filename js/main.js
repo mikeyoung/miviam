@@ -87,7 +87,7 @@
 		vibesPanWidth: "25", celestePanWidth: "25", celloPanWidth: "25", violinsPanWidth: "25",
 		choirPanWidth: "25"
 	};
-	var VINYL_DEFAULT = "33";       // 101-position scale (user 2026-06-16: was 15)
+	var VINYL_DEFAULT = "20";       // 101-position scale (user 2026-06-16: 15 -> 33 -> 20; matches all presets)
 	var MASTER_DEFAULT = "100";     // master volume percent (0–100)
 	var TOTAL_SOUNDS_DEFAULT = "5";   // chimes; capped at 5 globally (user 2026-06-15: dropdown max + default lowered 7->5). Was "7".
 	var MODE_DEFAULT = "chord";     // playback mode: "chord" | "classic" (user 2026-06-10)
