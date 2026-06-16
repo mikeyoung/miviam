@@ -331,6 +331,21 @@ td {
 	margin-top:8px;          /* separate the Volume / Balance / Pan width rows a little */
 }
 
+/* Delay checkboxes (Instrument Delay + Vinyl Delay) — enlarged + theme-tinted
+   (user 2026-06-16). iOS WebKit ignores width/height on a native checkbox (it
+   keeps the system size), so enlarge with transform:scale, which scales the
+   rendered control uniformly on Blink/Gecko/WebKit. accent-color paints the tick
+   the theme blue (matching the slider track). The scaled box's own hit-area stays
+   native-sized, but the wrapping <label> is the real tap target, so that's moot. */
+input[type="checkbox"].bigCheck {
+	transform:scale(1.7);
+	transform-origin:center;
+	accent-color:#4a78c8;
+	vertical-align:middle;
+	margin:0 10px;
+	cursor:pointer;
+}
+
 /* The instrument's name heads its block (above the three sliders, v46);
    slightly larger so the section reads as a unit. The .instrumentName span
    inside it is the play-flash target. */

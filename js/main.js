@@ -729,6 +729,47 @@
 		if (masterVolNode) { masterVolNode.gain.value = masterScale(); }
 	}
 
+	// Vinyl delay (user 2026-06-16): an OPTIONAL 3-tap echo on the VINYL bed only — its
+	// own #vinylDelayCheck, independent of the instrument Delay. Same parallel dry+wet
+	// shape as the instrument delay, but the taps are 0.33 s apart (vs 1 s) and they
+	// hang off the vinyl gain node, NOT the instrument bus. The dry vinyl path
+	// (vinylGain -> limiter) is untouched; the wet taps add echoes at 0.33/0.66/0.99 s.
+	// Built ONCE when the bed is routed (setupPanning) — the vinyl element is a single
+	// persistent source, so nothing is created per note and it stays leak-free. ON by
+	// default (fresh install) and carried checked by the Default preset.
+	var vinylDelayTaps = [];                              // the 3 tap GainNodes (wet level per tap)
+	var vinylDelayNodes = [];                             // the 3 cascaded DelayNodes (for _miviam tests)
+	var vinylDelayBuilt = false;
+	var VINYL_DELAY_TAP_S = 0.33;                         // 0.33 s (330 ms) between vinyl echo taps
+	var VINYL_DELAY_TAP_GAINS = [0.28125, 0.16875, 0.10125]; // decaying wet level per tap (off => all 0); same shape as the instrument echo, independently tunable; peaks caught by the -6 dB master limiter
+	var VINYL_DELAY_DEFAULT = true;                       // vinyl delay ON by default (fresh install) + carried by the Default preset
+	function vinylDelayOn() { var el = qs("#vinylDelayCheck"); return !!(el && el.checked); }
+	function applyVinylDelay() {
+		var on = vinylDelayOn();
+		for (var i = 0; i < vinylDelayTaps.length; i++) {
+			vinylDelayTaps[i].gain.value = on ? VINYL_DELAY_TAP_GAINS[i] : 0;
+		}
+	}
+	function buildVinylDelay() {                          // wire the 3-tap 0.33 s echo off the vinyl gain (once)
+		if (vinylDelayBuilt || !audioCtx || !vinyl._gain) { return; }
+		var limiter = masterBusTarget();
+		var prev = vinyl._gain;                          // wet sends tap off the vinyl level node
+		for (var i = 0; i < VINYL_DELAY_TAP_GAINS.length; i++) {
+			var d = audioCtx.createDelay(2);             // max 2 s >= each node's 0.33 s
+			d.delayTime.value = VINYL_DELAY_TAP_S;
+			var g = audioCtx.createGain();
+			g.gain.value = 0;                            // wet level set live by applyVinylDelay()
+			prev.connect(d);
+			d.connect(g);
+			g.connect(limiter);                          // WET tap i -> limiter (echo at (i+1)*0.33 s)
+			vinylDelayNodes.push(d);
+			vinylDelayTaps.push(g);
+			prev = d;                                    // cascade: each next tap 0.33 s further out
+		}
+		vinylDelayBuilt = true;
+		applyVinylDelay();                               // honour the checkbox's current state
+	}
+
 	function setupPanning() {   // name kept from the element era: routes the vinyl beds + resumes the ctx
 		if (!audioCtx) { return; }
 		if (vinylRouted) {
@@ -742,6 +783,7 @@
 			vinylGain.connect(masterBusTarget());
 			vinyl._gain = vinylGain;
 			vinyl.volume = 1;     // the gain carries the level now; .volume would double-attenuate
+			buildVinylDelay();    // wire the optional 3-tap 0.33 s vinyl echo off the vinyl gain
 		} catch (e) {
 			// Keep the native element.volume path; if the element was captured but
 			// not connected, wire it straight to the output so it stays audible.
@@ -1364,6 +1406,13 @@
 		qs("#delayCheck").checked = (dly === null) ? DELAY_DEFAULT : (dly === "true");
 		applyDelay();
 
+		// Vinyl delay (2026-06-16): persisted boolean "vinylDelay" — DEFAULT ON
+		// (VINYL_DELAY_DEFAULT) on a fresh install; a stored value wins. autocomplete=off
+		// on the box stops Firefox restoring a stale checked state across reload.
+		var vdly = lsGet("vinylDelay");
+		qs("#vinylDelayCheck").checked = (vdly === null) ? VINYL_DELAY_DEFAULT : (vdly === "true");
+		applyVinylDelay();
+
 		// Mute buttons (v164): each channel's persisted "<prefix>Muted" key sets the
 		// button's label (Mute / Unmute) + aria-pressed.
 		qsa(".muteButton").forEach(function (btn) {
@@ -1464,6 +1513,7 @@
 		p.speed = SPEED_DEFAULT;
 		p.direction = DIRECTION_DEFAULT;
 		p.delay = false;     // base/Classic/empty-slots OFF (the LIVE default is ON — see DELAY_DEFAULT; presets opt in)
+		p.vinylDelay = false;  // base/empty-slots OFF (the LIVE default is ON — see VINYL_DELAY_DEFAULT; the Default preset opts in)
 		if (n === 1) {
 			// "Space Opera": the choir alone, loud and wide; chimes at 3.
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
@@ -1524,6 +1574,7 @@
 			// DELAY_DEFAULT, the profile base is OFF) so re-assert it, and — unlike other
 			// presets — also carry the default main volume so Default is a FULL reset.
 			p.delay = DELAY_DEFAULT;
+			p.vinylDelay = VINYL_DELAY_DEFAULT;   // Default preset = fresh-install mix, so vinyl delay ON
 			p.masterVol = MASTER_DEFAULT;
 		} else if (n === 10) {
 			// "Drifter" (user 2026-06-16): the default mix, but Forward direction and
@@ -1563,6 +1614,7 @@
 		p.speed = qs("#speedSelect").value;
 		p.direction = qs("#directionSelect").value;
 		p.delay = qs("#delayCheck").checked;
+		p.vinylDelay = qs("#vinylDelayCheck").checked;
 		if (includeMaster) { p.masterVol = qs("#masterVol").value; }
 		return p;
 	}
@@ -1681,6 +1733,11 @@
 			qs("#delayCheck").checked = !!profile.delay;
 			lsSet("delay", profile.delay ? "true" : "false");
 			applyDelay();
+		}
+		if (Object.prototype.hasOwnProperty.call(profile, "vinylDelay")) {
+			qs("#vinylDelayCheck").checked = !!profile.vinylDelay;
+			lsSet("vinylDelay", profile.vinylDelay ? "true" : "false");
+			applyVinylDelay();
 		}
 		// Recall / preset clears every channel's mute (user 2026-06-14): a recalled
 		// mix must play exactly as stored. Mutes aren't part of a profile (an "off"
@@ -2368,6 +2425,13 @@
 			applyDelay();
 		});
 
+		// Vinyl delay (2026-06-16): persist + apply live — just sets the vinyl echo taps'
+		// gains (0 = off) on the already-wired vinyl delay network, so it toggles mid-play.
+		qs("#vinylDelayCheck").addEventListener("change", function () {
+			lsSet("vinylDelay", qs("#vinylDelayCheck").checked ? "true" : "false");
+			applyVinylDelay();
+		});
+
 		qs("#showSettings").addEventListener("click", function () {
 			if (!isAnimating) {
 				isAnimating = true;
@@ -2539,6 +2603,10 @@
 		get delayTapGains() { return delayTaps.map(function (g) { return g.gain.value; }); },
 		get delayTimes() { return delayNodes.map(function (d) { return d.delayTime.value; }); },
 		buildDelay: function () { ensureAudioContext(); return !!instrumentBusTarget(); },   // force-build for headless tests
+		get vinylDelayOn() { return vinylDelayOn(); },
+		get vinylDelayBuilt() { return vinylDelayBuilt; },
+		get vinylDelayTapGains() { return vinylDelayTaps.map(function (g) { return g.gain.value; }); },
+		get vinylDelayTimes() { return vinylDelayNodes.map(function (d) { return d.delayTime.value; }); },
 		get vinylAudible() { return vinylAudible(); },   // would the bed be heard? (false => beds paused)
 		get vinylPaused() { return vinyl.paused; },
 		bufferFor: function (prefix, rootNote) { return sampleBuffers[prefix + ":" + rootNote] || null; },
