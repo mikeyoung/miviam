@@ -203,21 +203,43 @@ input[type="button"]:active:not(:disabled),
 }
 
 /* Preset buttons (Default / Space Opera / Classic / Celestial / Chamber /
-   Drifter): a 2-column grid — 3 rows of 2 — with gap spacing between
-   each button (user 2026-06-15; was six stacked full-width rows). Grid's
-   default align stretch keeps both buttons in a row equal height even when a
-   longer label wraps. */
+   Drifter): a 2-column grid — 3 rows of 2 — with gap spacing between each
+   button (user 2026-06-15). These are <button> elements (not <input>) so
+   "Space Opera" can hard-break onto two lines via <br>. grid-auto-rows:1fr
+   makes every row the same (taller) height as the tallest, so all six match
+   regardless of one- vs two-line labels (user 2026-06-15: taller buttons). */
 .presetGrid {
 	display:grid;
 	grid-template-columns:1fr 1fr;
+	grid-auto-rows:1fr;          /* equal row heights => all six buttons match the tallest */
 	gap:10px;
 	width:90%;                   /* matches the drawer rows */
 	margin:6px auto 10px auto;   /* bottom gap before the Store/Recall slots */
 }
-.presetGrid input[type="button"] {
+.presetGrid button {
 	width:100%;
 	min-width:0;
 	margin:0;
+	padding:12px 10px;           /* taller than the 6px base button padding */
+	line-height:1.25;            /* tidy spacing for the two-line "Space Opera" */
+	/* These are <button>, so they don't inherit the global input[type="button"]
+	   look — replicate the off-white button styling here. */
+	-webkit-appearance:none;
+	appearance:none;
+	background-color:#f5f2e9;
+	color:#222222;
+	border:1px solid #b9b3a4;
+	border-radius:6px;
+	cursor:pointer;
+	-webkit-touch-callout:none;
+	-webkit-user-select:none;
+	user-select:none;
+	touch-action:manipulation;
+	box-shadow:0 0 6px rgba(255, 255, 0, 0), 0 0 14px rgba(255, 255, 0, 0);
+	transition:box-shadow 0.2s ease;
+}
+.presetGrid button:active {
+	box-shadow:0 0 6px rgba(255, 255, 0, 1), 0 0 14px rgba(255, 255, 0, 0.9);
 }
 
 /* Non-destructive Mute / Unmute button (v164): a full-width toggle directly
