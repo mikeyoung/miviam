@@ -1510,7 +1510,8 @@
 		} else if (n === 2) {
 			// "Classic": classic mode on the note D; the core instruments at
 			// their usual levels. The re-added Bass (2026-06-13) sits centred
-			// and un-widened; the rest scatter at width 25.
+			// and un-widened; the rest scatter at width 25. Chimes 4, Speed
+			// Normal, Direction Forward, Delay off (user 2026-06-15).
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.bassVol = "100";   p.bassPanWidth = "0";
 			p.fluteVol = "50";   p.flutePanWidth = "25";
@@ -1519,6 +1520,10 @@
 			p.mode = "classic";
 			p.classicNote = "D";
 			p.vinylVol = "15";
+			p.totalSoundsSelect = "4";
+			p.speed = "normal";
+			p.direction = "forward";
+			p.delay = false;
 		} else if (n === 7) {
 			// "Celestial" (user 2026-06-14): celeste alone, chord mode (Major). Vol 75,
 			// chimes 5, balance centred (display 0), width 50, Delay on, Forward, Normal.
