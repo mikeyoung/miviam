@@ -680,7 +680,7 @@
 	var delayTaps = [];                              // the 3 tap GainNodes (wet level per tap)
 	var delayNodes = [];                             // the 3 cascaded DelayNodes (for _miviam tests)
 	var DELAY_TAP_S = 1;                             // 1 s (1000 ms) between taps
-	var DELAY_TAP_GAINS = [0.1875, 0.1125, 0.0675]; // decaying echo level per tap (off => all 0); 3 taps; +50% louder 2026-06-15 (was [0.125,0.075,0.045], itself was 4 taps less 0.027)
+	var DELAY_TAP_GAINS = [0.28125, 0.16875, 0.10125]; // decaying echo level per tap (off => all 0); 3 taps; echo +50% again 2026-06-15 (was [0.1875,0.1125,0.0675]; before that [0.125,0.075,0.045]; peaks caught by the -6 dB master limiter)
 	var DELAY_DEFAULT = true;                           // delay ON by default (fresh start + Reset); the
 	                                                    // profile BASE stays off (Classic + empty slots) — presets opt in
 	function instrumentBusTarget() {
