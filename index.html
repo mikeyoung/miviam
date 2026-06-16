@@ -472,13 +472,6 @@
 		<audio id="vinylLoop" preload="auto">
 			<source src="snd/vinyl_noise.mp3" type="audio/mpeg"></source>
 		</audio>
-		<!-- Second vinyl bed instance: the SAME file, played channel-swapped
-		     (L/R crossed via Web Audio) and started 4-9 s after the first, each
-		     instance at half level - a decorrelated pair that widens the bed
-		     without raising its loudness. No controls; it follows #vinylVol. -->
-		<audio id="vinylLoop2" preload="auto">
-			<source src="snd/vinyl_noise.mp3" type="audio/mpeg"></source>
-		</audio>
 		<!-- Ghost keep-alive track: the FILE is pure silence, played unmuted at
 		     volume 1 (iOS ignores element.volume and treats muted media as
 		     non-audible, so silencing the element instead of the file would not

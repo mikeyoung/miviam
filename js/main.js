@@ -10,11 +10,10 @@
  * 51 = centre) and pan width (0–100) apply per note in both modes.
  * Vinyl bed slider is 0–100 mapping onto 1%–50% volume; the bed is PAUSED
  * whenever it would be inaudible (slider 0, master 0, or vinyl muted) — the
- * ghost keep-alive below holds the media session in its place. The bed is TWO
- * element instances of the same noise
- * file — the second channel-swapped (L/R crossed) and started 4–9 s late,
- * each at half level — through Web Audio GainNodes so the level is linear
- * on every browser (Firefox desktop tapers element.volume perceptually).
+ * ghost keep-alive below holds the media session in its place. The bed is a
+ * single element instance of the noise file, played through a Web Audio
+ * GainNode so the level is linear on every browser (Firefox desktop tapers
+ * element.volume perceptually).
  * A ghost keep-alive track (#keepAliveLoop, a silent FILE, never routed
  * through the AudioContext) plays whenever the app plays so the OS keeps an
  * audible media session alive even if it suspends Web Audio in the
@@ -64,10 +63,7 @@
 	var sleepInterval;
 	var isAnimating = false;
 	var settingsOpen = false;       // advanced-settings panel open? (gates the fader flash)
-	var vinyl;                      // #vinylLoop element (first bed instance)
-	var vinyl2;                     // #vinylLoop2 — same file, channel-swapped, starts 4–9 s late
-	var vinyl2Timer = null;         // pending delayed start of the second instance
-	var vinyl2Started = false;      // true once the delayed start has fired (until Stop)
+	var vinyl;                      // #vinylLoop element (the single vinyl bed)
 	var ghost;                      // #keepAliveLoop element (silent keep-alive bed)
 
 	// Default slider values (restoreState fallback + the "Default" preset).
@@ -144,12 +140,9 @@
 		return (1 + (v - 1) * 49 / 99) / 100;   // 1 -> 1% … 100 -> 50%
 	}
 
-	// The bed is two instances of the same file; each carries HALF the slider
-	// level so adding the second doesn't raise the overall loudness much, and
-	// the second joins a random 4–9 s after Start (user 2026-06-10).
-	var VINYL_INSTANCE_GAIN = 0.5;
-	var VINYL2_DELAY_MIN_MS = 4000;
-	var VINYL2_DELAY_SPAN_MS = 5000;
+	// Single vinyl bed (user 2026-06-16: the second, channel-swapped, 4–9 s-delayed
+	// instance was removed). It plays at the full vinylScale level (1%–50%) — the old
+	// per-instance ×0.5 halving only existed to balance the decorrelated pair.
 
 	// One-time migration of saved mixes from the legacy 21-station scale
 	// (instrument 0–20 → ×5 on the 0–100 percent scale; vinyl 0–20, which
@@ -734,29 +727,7 @@
 				if (vinylSrc && !vinyl._gain) { vinylSrc.connect(masterBusTarget()); }
 			} catch (e2) {}
 		}
-		// Second bed instance: split the stereo pair and re-merge it CROSSED
-		// (left→right, right→left) ahead of its gain — the file is joint
-		// stereo, so the swap genuinely mirrors the image. Splitter/merger are
-		// core Web Audio nodes, available wherever the context itself is. If
-		// routing fails it plays unswapped on element volume, like the first.
-		try {
-			var vinyl2Src = audioCtx.createMediaElementSource(vinyl2);
-			var swapSplit = audioCtx.createChannelSplitter(2);
-			var swapMerge = audioCtx.createChannelMerger(2);
-			var vinyl2Gain = audioCtx.createGain();
-			vinyl2Src.connect(swapSplit);
-			swapSplit.connect(swapMerge, 0, 1);
-			swapSplit.connect(swapMerge, 1, 0);
-			swapMerge.connect(vinyl2Gain);
-			vinyl2Gain.connect(masterBusTarget());
-			vinyl2._gain = vinyl2Gain;
-			vinyl2.volume = 1;
-		} catch (e3) {
-			try {
-				if (vinyl2Src && !vinyl2._gain) { vinyl2Src.connect(masterBusTarget()); }
-			} catch (e4) {}
-		}
-		setVinylVolume();     // re-apply the current slider value onto the gains
+		setVinylVolume();     // re-apply the current slider value onto the gain
 		vinylRouted = true;
 		if (audioCtx.state === "suspended") { audioCtx.resume().catch(function () {}); }
 	}
@@ -1068,9 +1039,6 @@
 		clearChordTimers();            // a pending chord-state end or gap end must not fire after Stop
 		currentChordPc = null;         // next Start draws a fresh chord
 		vinyl.pause();
-		if (vinyl2Timer) { clearTimeout(vinyl2Timer); vinyl2Timer = null; }   // a pending late start must not fire after Stop
-		vinyl2Started = false;
-		vinyl2.pause();
 		if (ghost) { ghost.pause(); }   // release the audio session (Control Center / audio focus)
 		setPlaybackState("paused");
 		// (Notes in flight are ≤ ~5.2 s and finish on their own — matching the
@@ -1093,8 +1061,7 @@
 		// pause handlers): a user Start should get a clean chance to hold focus.
 		if (ghost) { ghost._pauseHist = []; }
 		vinyl._pauseHist = [];
-		vinyl2._pauseHist = [];
-		setupPanning();   // user gesture: route the vinyl beds / resume the ctx
+		setupPanning();   // user gesture: route the vinyl bed / resume the ctx
 		if (currentMode() === "chord") {
 			// Always a fresh start (the guard above bars re-entry, and Stop
 			// cleared any chord timers) — begin a new progression.
@@ -1104,7 +1071,7 @@
 		}
 		try { playSound(); } catch (e) {}   // immediate first note; a throw must NOT abort the rest of startAudio
 		setSoundPlayerArray(parseInt(qs("#totalSoundsSelect").value, 10));
-		setVinylVolume();   // start the beds if audible (and schedule vinyl2); pause them if silent
+		setVinylVolume();   // start the bed if audible; pause it if silent
 		playGhost();        // silent keep-alive bed (plain element, never routed) — holds the media session
 		setPlaybackState("playing");
 	}
@@ -1256,10 +1223,10 @@
 	}
 
 	// "Would the bed actually be heard?" — false when the slider is 0, the master
-	// is 0, or vinyl is muted (the effective gain is then 0). When false the beds
-	// are PAUSED rather than run silently (user 2026-06-14): the unrouted silent
-	// ghost already holds the media session, so there's no point spinning two noise
-	// streams' DSP for nothing. The pause handlers + focus-yield below also gate on
+	// is 0, or vinyl is muted (the effective gain is then 0). When false the bed
+	// is PAUSED rather than run silently (user 2026-06-14): the unrouted silent
+	// ghost already holds the media session, so there's no point spinning the noise
+	// stream's DSP for nothing. The pause handlers + focus-yield below also gate on
 	// this, so an intentional silence-pause is never auto-resumed or miscounted.
 	function vinylAudible() {
 		if (isMuted("vinyl")) { return false; }
@@ -1271,57 +1238,22 @@
 	function setVinylVolume() {
 		var slider = qs("#vinylVol");
 		var v = parseInt(slider.value, 10);   // 0–100 (0 = silent)
-		// Both bed instances carry the same level: slider scale × master × the
-		// per-instance half cut (the Mute button forces it to 0).
-		var vol = isMuted("vinyl") ? 0 : vinylScale(v) * masterScale() * VINYL_INSTANCE_GAIN;   // 1–100 -> 1%–50%, halved per instance
+		// The bed's level: slider scale × master (the Mute button forces it to 0).
+		var vol = isMuted("vinyl") ? 0 : vinylScale(v) * masterScale();   // 1–100 -> 1%–50%
 		if (vinyl._gain) {
 			vinyl._gain.gain.value = vol;   // routed: linear Web Audio gain, same loudness on every browser
 		} else {
 			vinyl.volume = vol;             // not (yet) routed: native element volume
 		}
-		if (vinyl2._gain) {
-			vinyl2._gain.gain.value = vol;
-		} else {
-			vinyl2.volume = vol;
-		}
 		updateVolLabel(slider);
 		updateMutedTags();
-		// Play the beds only while they'd be heard; otherwise PAUSE them (the ghost
-		// holds the media session). The second instance takes its decorrelated 4–9 s
-		// delayed start the first time the bed is audible, then follows the first.
+		// Play the bed only while it'd be heard; otherwise PAUSE it (the ghost holds
+		// the media session).
 		if (audioEnabled && vinylAudible()) {
 			vinyl.play().catch(function () {});
-			if (vinyl2Started) { vinyl2.play().catch(function () {}); }
-			else { scheduleVinyl2(); }
 		} else {
 			vinyl.pause();
-			vinyl2.pause();
 		}
-	}
-
-	// The second bed instance joins a random 4–9 s after each Start, so the two
-	// copies of the same noise file never line up; with the channel swap this
-	// widens the bed instead of just doubling it. Once the delayed start has
-	// fired, the instance belongs to the auto-resume machinery (setVinylVolume
-	// + the pause debounce) — a re-Start while audio keeps playing (e.g.
-	// changing the chime count restarts scheduling) must leave it alone, even
-	// mid transient pause, or it would be silenced for a fresh 4–9 s and the
-	// pending debounce disarmed. Only Stop resets it (stopAudio cancels a
-	// pending timer and clears the flag).
-	function scheduleVinyl2() {
-		if (vinyl2Started || vinyl2Timer) { return; }   // already started, or a start is pending — don't reset it
-		// The delay is determined randomly HERE — before the second instance
-		// starts — so every (first-audible) start draws a fresh 4–9 s value.
-		var delayMs = VINYL2_DELAY_MIN_MS + Math.floor(Math.random() * VINYL2_DELAY_SPAN_MS);
-		vinyl2Timer = setTimeout(function () {
-			vinyl2Timer = null;
-			if (audioEnabled && vinylAudible()) {
-				vinyl2Started = true;
-				vinyl2.play().catch(function () {});
-			}
-			// Not audible when the timer fires: leave vinyl2Started false; the next
-			// audible setVinylVolume re-schedules a fresh decorrelated start.
-		}, delayMs);
 	}
 
 	// Ghost keep-alive: a silent FILE played unmuted at full volume on a plain,
@@ -1441,7 +1373,7 @@
 
 	// The Mute / Unmute buttons (v164) — the non-destructive kill switch. Clicking
 	// one flips its state, persists the channel's "<prefix>Muted" key and re-applies
-	// the level live: vinyl re-scales its gain (pausing the beds at silence), an
+	// the level live: vinyl re-scales its gain (pausing the bed at silence), an
 	// instrument simply stops being picked (playSound reads isMuted live).
 	// buildSoundArray / setVinylVolume also refresh the "(Muted)" tag. Unlike the
 	// old checkbox, a button has no Firefox-restorable form state across reload —
@@ -2199,8 +2131,6 @@
 
 		vinyl = qs("#vinylLoop");
 		vinyl.addEventListener("ended", function () { vinyl.play(); }, false);
-		vinyl2 = qs("#vinylLoop2");
-		vinyl2.addEventListener("ended", function () { vinyl2.play(); }, false);
 		ghost = qs("#keepAliveLoop");
 
 		// iOS Safari 16.4+ (Audio Session API): declare long-form playback so
@@ -2260,22 +2190,6 @@
 				setTimeout(function () {
 					if (audioEnabled && vinylAudible() && vinyl.paused) {
 						vinyl.play().catch(function () {});
-					}
-				}, 400);
-			}
-		});
-
-		// The second bed instance gets the same recovery, but only once its
-		// delayed start has fired (vinyl2Started) — before that, "paused" is
-		// simply its not-yet-started state and must stay that way.
-		vinyl2.addEventListener("pause", function () {
-			// Same recovery, with the same vinylAudible() gate as the first bed: a
-			// deliberate silence-pause stays paused and isn't counted as a focus steal.
-			if (audioEnabled && vinyl2Started && vinylAudible()) {
-				if (shouldYieldAudioFocus(vinyl2)) { stopAudio(); return; }
-				setTimeout(function () {
-					if (audioEnabled && vinyl2Started && vinylAudible() && vinyl2.paused) {
-						vinyl2.play().catch(function () {});
 					}
 				}, 400);
 			}
@@ -2599,8 +2513,6 @@
 		buildDelay: function () { ensureAudioContext(); return !!instrumentBusTarget(); },   // force-build for headless tests
 		get vinylAudible() { return vinylAudible(); },   // would the bed be heard? (false => beds paused)
 		get vinylPaused() { return vinyl.paused; },
-		get vinyl2Paused() { return vinyl2.paused; },
-		get vinyl2Started() { return vinyl2Started; },
 		bufferFor: function (prefix, rootNote) { return sampleBuffers[prefix + ":" + rootNote] || null; },
 		reversedBufferFor: function (prefix, rootNote) { return reversedBufferFor(prefix + ":" + rootNote); }
 	};
