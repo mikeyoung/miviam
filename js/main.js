@@ -791,6 +791,13 @@
 	var SLOW_RATE = 0.5;                     // a slowed note's playbackRate × this
 	var SLOW_TEMPO_MUL = 2;                  // engine timer durations × this in full Slow
 	var SLOW_LOW_CUTOFF = NOTE_FLOOR + 12;   // the lowest octave (42–53): never dropped an octave by slowing
+	// Bass sits an octave below the other instruments, so a SLOWED 2nd-octave bass note
+	// (54–65, ×0.5 ⇒ effective pitch 42–53) sinks into the same mud a slowed lowest-octave
+	// note would. Bass therefore gets an octave-higher slow floor: only bass notes ≥ 66 are
+	// slow-eligible (their ×0.5 lands ≥ 54, audible). Other instruments keep SLOW_LOW_CUTOFF.
+	// (user 2026-06-16 — filters out 2nd-octave-slowed-into-the-mud bass.)
+	var BASS_SLOW_CUTOFF = SLOW_LOW_CUTOFF + 12;   // 66 — bass-only slow floor
+	function slowFloorFor(prefix) { return prefix === "bass" ? BASS_SLOW_CUTOFF : SLOW_LOW_CUTOFF; }
 	function currentSpeed() {
 		var el = qs("#speedSelect");
 		var v = el ? el.value : SPEED_DEFAULT;
@@ -799,10 +806,10 @@
 	function slowModeOn() { return currentSpeed() === "slow"; }   // FULL slow only (kept for callers)
 	// Per-note slow decision: SLOW ⇒ always; MIXED ⇒ 50/50 but never a lowest-octave
 	// note (an octave below it would sink into mud); NORMAL ⇒ never.
-	function noteIsSlow(note) {
+	function noteIsSlow(note, prefix) {
 		var sp = currentSpeed();
-		if (sp === "slow") { return true; }
-		if (sp === "mixed") { return note >= SLOW_LOW_CUTOFF && Math.random() < 0.5; }
+		if (sp === "slow") { return true; }   // full Slow: the pool filter (slowNoteFilter) already removed the un-slowable low notes
+		if (sp === "mixed") { return note >= slowFloorFor(prefix) && Math.random() < 0.5; }
 		return false;
 	}
 	// Could ANY note be slow at the current setting? Drives the chord-gap worst case so
@@ -812,9 +819,10 @@
 	// Drop the lowest octave from a note list while FULL slow (fallback to the full list
 	// so a pitch class is never left with nothing). Mixed keeps the full pool — its
 	// per-note guard (noteIsSlow) handles the low octave instead.
-	function slowNoteFilter(notes) {
+	function slowNoteFilter(notes, prefix) {
 		if (currentSpeed() !== "slow") { return notes; }
-		var hi = notes.filter(function (n) { return n >= SLOW_LOW_CUTOFF; });
+		var floor = slowFloorFor(prefix);   // 66 for bass (drops its 2nd octave too), else 54
+		var hi = notes.filter(function (n) { return n >= floor; });
 		return hi.length ? hi : notes;
 	}
 
@@ -940,7 +948,7 @@
 		var volEl = document.getElementById(instr.prefix + "Vol");
 		var vol = volEl ? parseInt(volEl.value, 10) : 0;
 		if (!(vol > 0)) { return; }   // position 0 = instrument off
-		if (slow === undefined) { slow = noteIsSlow(note); }   // playSound passes it; default for safety
+		if (slow === undefined) { slow = noteIsSlow(note, instr.prefix); }   // playSound passes it; default for safety
 		var src = audioCtx.createBufferSource();
 		src.buffer = buf;
 		src.playbackRate.value = s.rate * (slow ? SLOW_RATE : 1);
@@ -996,16 +1004,16 @@
 		var instr = enabled[Math.floor(Math.random() * enabled.length)];
 		var note;
 		if (currentMode() === "classic") {
-			var octaves = slowNoteFilter(notesForPc(NOTE_PCS[currentClassicNote()]));
+			var octaves = slowNoteFilter(notesForPc(NOTE_PCS[currentClassicNote()]), instr.prefix);
 			note = octaves[Math.floor(Math.random() * octaves.length)];
 		} else {
 			if (currentChordPc === null) { return false; }   // no chord (incl. the silent gap) — play nothing
 			var ivs = currentChordFormula();
 			var pc = (currentChordPc + ivs[Math.floor(Math.random() * ivs.length)]) % 12;
-			var octaves = slowNoteFilter(notesForPc(pc));
+			var octaves = slowNoteFilter(notesForPc(pc), instr.prefix);
 			note = octaves[Math.floor(Math.random() * octaves.length)];
 		}
-		var slow = noteIsSlow(note);   // decide ONCE; drives playbackRate AND the next note's gap
+		var slow = noteIsSlow(note, instr.prefix);   // decide ONCE; drives playbackRate AND the next note's gap
 		playNote(instr, note, slow);
 		return slow;
 	}
