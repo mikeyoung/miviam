@@ -1458,7 +1458,7 @@
 	// balance / width (muted = volume 0), the vinyl volume, the chime frequency,
 	// the mode and both mode fields (chord tone + classic note — both stored so
 	// either mode recalls intact). The PRESET buttons (Default / Space Opera /
-	// Classic / Celestial / Chamber / Spacing Out — their names are their button labels) recall
+	// Classic / Celestial / Chamber / Wall of Tone — their names are their button labels) recall
 	// factory mixes 9/1/2/7/8/10 directly: no Store, no title, nothing to clear.
 	// "Default" (9) is the app's fresh-load defaults and replaced the old "Reset
 	// to default" button (user 2026-06-14). The SLOTS (3..6) each have Store N /
@@ -1478,7 +1478,7 @@
 
 
 	// Factory contents: 1/2/7/8/9/10 are the permanent presets' mixes (Space Opera /
-	// Classic / Celestial / Chamber / Default / Spacing Out); slots 3..6 fall through to the base
+	// Classic / Celestial / Chamber / Default / Wall of Tone); slots 3..6 fall through to the base
 	// (empty-state fallback).
 	// Built from the same constants as Reset so "default" can never drift
 	// from the app's own. The user's values are display-scale — a Balance
@@ -1559,7 +1559,7 @@
 			p.delay = DELAY_DEFAULT;
 			p.masterVol = MASTER_DEFAULT;
 		} else if (n === 10) {
-			// "Spacing Out" (user 2026-06-15): created as a copy of Default's
+			// "Wall of Tone" (user 2026-06-15): created as a copy of Default's
 			// settings (the fresh-load defaults, incl. the full master reset).
 			// Its own branch so it can diverge from Default later without
 			// touching it. Mirrors n===9 for now.
@@ -1866,7 +1866,7 @@
 	function setupMemory() {
 		// The permanent presets, in button order: Default (9, = the fresh-load
 		// defaults, replacing the old "Reset to default"), Space Opera (1), Classic
-		// (2), Celestial (7), Chamber (8), Spacing Out (10, a copy of Default —
+		// (2), Celestial (7), Chamber (8), Wall of Tone (10, a copy of Default —
 		// user 2026-06-15). Plain recalls of the factory mixes — no Store/title.
 		// (The 1968 preset was retired 2026-06-14; its Mixed/Mixed/chimes-7/Delay-on
 		// settings are now the app defaults.)
