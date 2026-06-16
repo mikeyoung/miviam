@@ -115,8 +115,10 @@
 	var LIMITER_ATTACK_S = 0.003;    // s — fast enough to catch a stacked-note peak
 	var LIMITER_RELEASE_S = 0.25;    // s — smooth release; no pumping on the ambient bed
 
-	// Master volume (0–100%) scales EVERYTHING — each instrument note and the
-	// vinyl bed — on top of their own sliders (× the headroom above).
+	// Master volume (0–100%) scales EVERYTHING — the whole instrument mix and the
+	// vinyl bed — on top of their own sliders (× the headroom above). It is applied
+	// as the master FADER: a single post-delay node for the instrument bus
+	// (masterVolNode, see instrumentBusTarget) and the vinyl bed's own gain.
 	function masterScale() {
 		var el = qs("#masterVol");
 		var v = el ? parseInt(el.value, 10) : 100;
@@ -664,12 +666,23 @@
 
 	// Delay (user 2026-06-14): an optional 3-tap echo on the INSTRUMENT tracks (not
 	// vinyl), 1 s apart. ONE persistent network: every note routes through the
-	// shared instrumentBus, which feeds the master bus DRY and a cascade of three
+	// shared instrumentBus, which feeds the master fader DRY and a cascade of three
 	// 1 s DelayNodes whose tap gains add the echoes. Nothing is created per note
 	// (the v129/v140 lesson) — the taps live in the graph and keep ringing after a
 	// note's source ends — so it's cheap and leak-free. The checkbox just sets the
 	// tap gains (0 = off), so toggling is live and free. Built once, on the first note.
+	//
+	// Signal chain (user 2026-06-16): each instrument's channel level (its volume
+	// slider, the random envelope, the flute-high trim) is baked into the per-note
+	// gain BEFORE the bus — that's the channel fader feeding the bus. The bus mix
+	// then hits the delay, and ONLY AFTER the delay does the master-volume fader
+	// (masterVolNode = masterScale()) scale the whole dry+wet sum. So master volume
+	// is applied post-delay, in ONE place, and now also rides the live echo tails
+	// (previously it was baked per-note, upstream of the delay). It's loudness-neutral
+	// at steady state — a linear scalar distributes over the summed mix — so the
+	// limiter still sees the same signal at any given master setting.
 	var instrumentBus = null;
+	var masterVolNode = null;                        // master fader: AFTER the delay, carries masterScale() for the whole instrument mix
 	var delayTaps = [];                              // the 3 tap GainNodes (wet level per tap)
 	var delayNodes = [];                             // the 3 cascaded DelayNodes (for _miviam tests)
 	var DELAY_TAP_S = 1;                             // 1 s (1000 ms) between taps
@@ -679,9 +692,12 @@
 	function instrumentBusTarget() {
 		if (!audioCtx) { return null; }
 		if (!instrumentBus) {
-			var master = masterBusTarget();
+			var limiter = masterBusTarget();
+			masterVolNode = audioCtx.createGain();
+			masterVolNode.gain.value = masterScale();   // master volume, applied AFTER the delay
+			masterVolNode.connect(limiter);             // master fader -> limiter -> destination
 			instrumentBus = audioCtx.createGain();
-			instrumentBus.connect(master);    // DRY path (always)
+			instrumentBus.connect(masterVolNode);    // DRY path (always) -> master fader
 			var prev = instrumentBus;
 			for (var i = 0; i < DELAY_TAP_GAINS.length; i++) {
 				var d = audioCtx.createDelay(2);   // max 2 s >= each node's 1 s
@@ -690,7 +706,7 @@
 				g.gain.value = 0;             // wet level set live by applyDelay()
 				prev.connect(d);
 				d.connect(g);
-				g.connect(master);            // WET tap i -> master (echo at (i+1)*1 s)
+				g.connect(masterVolNode);     // WET tap i -> master fader (echo at (i+1)*1 s)
 				delayNodes.push(d);
 				delayTaps.push(g);
 				prev = d;                     // cascade: each next tap is 1 s further out
@@ -705,6 +721,12 @@
 		for (var i = 0; i < delayTaps.length; i++) {
 			delayTaps[i].gain.value = on ? DELAY_TAP_GAINS[i] : 0;
 		}
+	}
+	// Master volume rides the post-delay fader: a no-op until the bus is built (no
+	// instrument sound is audible before then, so nothing to scale). Called live on
+	// every master-volume change (slider + preset recall).
+	function applyMasterVol() {
+		if (masterVolNode) { masterVolNode.gain.value = masterScale(); }
 	}
 
 	function setupPanning() {   // name kept from the element era: routes the vinyl beds + resumes the ctx
@@ -889,8 +911,9 @@
 
 	// Play one note NOW (both modes route through here): buffer source →
 	// StereoPanner (balance + pan width, where available) → gain (the classic
-	// random 0.2–0.8 envelope × instrument volume % × main volume) →
-	// destination. Each note's nodes are torn down in src.onended (v129): a
+	// random 0.2–0.8 envelope × instrument volume %) → the shared instrument bus
+	// (delay) → master fader (main volume) → limiter → destination. Each note's
+	// nodes are torn down in src.onended (v129): a
 	// node that stays connected to destination is a GC root, and Firefox
 	// (unlike Chrome/WebKit) never reclaims a finished-but-still-connected
 	// source — so WITHOUT the explicit disconnect the per-note graph piled up
@@ -924,7 +947,9 @@
 		src.buffer = buf;
 		src.playbackRate.value = s.rate * (slow ? SLOW_RATE : 1);
 		var gain = audioCtx.createGain();
-		gain.gain.value = (0.2 + 0.6 * Math.random()) * instrumentScale(vol) * masterScale() * fluteHighGain(instr, note, slow);
+		// Channel level only (random envelope × instrument volume × flute trim). Master
+		// volume is NOT applied here — it rides masterVolNode, AFTER the delay bus.
+		gain.gain.value = (0.2 + 0.6 * Math.random()) * instrumentScale(vol) * fluteHighGain(instr, note, slow);
 		var panner = null;
 		if (typeof StereoPannerNode !== "undefined" && audioCtx.createStereoPanner) {
 			panner = audioCtx.createStereoPanner();
@@ -934,7 +959,7 @@
 		} else {
 			src.connect(gain);
 		}
-		gain.connect(instrumentBusTarget());   // shared instrument bus: dry + the 3-tap delay, then master
+		gain.connect(instrumentBusTarget());   // shared instrument bus: dry + the 3-tap delay, then the master fader, then the limiter
 		// Release the whole chainlet from the graph the instant the note ends so
 		// it is no longer reachable from destination and can be collected (see
 		// the note above). Natural-end onended fires once on every target while
@@ -1668,6 +1693,7 @@
 		});
 		buildSoundArray();   // instrumentsEnabled + persists vols + "(Muted)" tags
 		setVinylVolume();    // the bed re-scales live if playing
+		applyMasterVol();    // a profile carrying masterVol (Default / URL patch) re-scales the instrument mix live
 		updateChordToneVisibility();
 		// A mid-play recall is LIVE: re-arm the interval players at the recalled
 		// chime count (NOT via startAudio — non-reentrant) and restart the chord
@@ -2252,12 +2278,13 @@
 			setVinylVolume();
 		});
 
-		// Master volume: persist + relabel; the vinyl bed re-scales immediately,
-		// instrument notes pick it up on their next play (masterScale is read
-		// live in playSound).
+		// Master volume: persist + relabel; the vinyl bed re-scales immediately and
+		// the instrument mix re-scales live via the post-delay master fader
+		// (applyMasterVol) — including the echo tails already ringing in the delay.
 		qs("#masterVol").addEventListener("input", function () {
 			lsSet("masterVol", qs("#masterVol").value);
 			updateVolLabel(qs("#masterVol"));
+			applyMasterVol();
 			setVinylVolume();
 		});
 
@@ -2508,6 +2535,7 @@
 		get direction() { return currentDirection(); },
 		get delayOn() { return delayOn(); },
 		get delayBuilt() { return !!instrumentBus; },
+		get masterVolGain() { return masterVolNode ? masterVolNode.gain.value : null; },   // post-delay master fader level (= masterScale once built)
 		get delayTapGains() { return delayTaps.map(function (g) { return g.gain.value; }); },
 		get delayTimes() { return delayNodes.map(function (d) { return d.delayTime.value; }); },
 		buildDelay: function () { ensureAudioContext(); return !!instrumentBusTarget(); },   // force-build for headless tests
