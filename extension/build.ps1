@@ -44,6 +44,14 @@ foreach ($t in $targets) {
 		Copy-Item (Join-Path $root $d) (Join-Path $out $d) -Recurse -Force
 	}
 
+	# Web-app img/ assets that are NOT part of the extension package (e.g. a
+	# store-listing-only icon kept in the repo). Dropped after the wholesale copy.
+	$bundleExclude = @('img\icon-128.png')
+	foreach ($x in $bundleExclude) {
+		$p = Join-Path $out $x
+		if (Test-Path $p) { Remove-Item $p -Force }
+	}
+
 	Copy-Item (Join-Path $srcDir 'background.js') (Join-Path $out 'background.js') -Force
 	Copy-Item (Join-Path $srcDir "manifest.$t.json") (Join-Path $out 'manifest.json') -Force
 
