@@ -1632,7 +1632,7 @@
 	// overrides saved settings (folded into localStorage so restoreState applies +
 	// persists it, with mutes cleared so it plays as shared). Hash (not query) keeps it
 	// client-side — never sent to the server or cached by the service worker.
-	var URL_PATCH_PARAM = "patch";   // renamed from "p" 2026-06-16; patchFromUrl still READS legacy "p=" links
+	var URL_PATCH_PARAM = "patch";   // the URL hash key: #patch=<base64url JSON> (renamed from "p" 2026-06-16)
 	var urlSyncTimer = null;
 	function encodePatch(p) {
 		// the patch JSON is ASCII (keys + number/word/boolean values) so btoa is safe
@@ -1645,10 +1645,7 @@
 		} catch (e) { return null; }
 	}
 	function patchFromUrl() {
-		var h = location.hash || "";
-		// Param is "patch="; the legacy "p=" is still READ so links shared before the
-		// rename keep working (new writes always use "patch=", see URL_PATCH_PARAM).
-		var m = h.match(/[#&]patch=([^&]+)/) || h.match(/[#&]p=([^&]+)/);
+		var m = (location.hash || "").match(/[#&]patch=([^&]+)/);
 		return m ? decodePatch(m[1]) : null;
 	}
 	function syncUrl() {
