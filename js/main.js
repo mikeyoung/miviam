@@ -9,7 +9,7 @@
  * octave). Per-instrument volume (0–100; 0 = off), stereo balance (1–101,
  * 51 = centre) and pan width (0–100) apply per note in both modes.
  * Vinyl bed slider is 0–100 mapping onto 1%–50% volume; the bed is PAUSED
- * whenever it would be inaudible (slider 0, master 0, or vinyl muted) — the
+ * whenever it would be inaudible (slider 0 or master 0) — the
  * ghost keep-alive below holds the media session in its place. The bed is a
  * single element instance of the noise file, played through a Web Audio
  * GainNode so the level is linear on every browser (Firefox desktop tapers
@@ -130,9 +130,9 @@
 	// (excluded from the rotation); 1–100 ARE the volume percentage in whole
 	// points.
 	// Vinyl — 101 positions, values 0–100: 0 is 0% volume and the bed is
-	// PAUSED whenever it would be inaudible (slider 0, master 0, or vinyl
-	// muted) — the unrouted silent ghost element holds the background /
-	// lock-screen media session in its place (see setVinylVolume /
+	// PAUSED whenever it would be inaudible (slider 0 or master 0) — the
+	// unrouted silent ghost element holds the background / lock-screen media
+	// session in its place (see setVinylVolume /
 	// vinylAudible). Values 1–100 map linearly onto 1%–50% volume (unlike the
 	// instruments the value is a POSITION, not the percent — the label shows
 	// the position).
@@ -278,27 +278,23 @@
 
 	// Lazy decoding + evict-on-disable (user 2026-06-14): samples are NO LONGER
 	// all decoded up front. Each instrument's 12 samples are fetched + decoded the
-	// first time the instrument is AUDIBLE (volume > 0 AND not muted) and EVICTED
-	// when it leaves the mix (volume 0 OR muted), so the ~84 MB decoded library
-	// tracks only the instruments currently audible. The mp3 bytes are tiny +
-	// SW-cached, so the only real cost is the decode; a freshly-(re)enabled
-	// instrument's first notes skip silently for the fraction of a second until its
-	// buffers land — so un-mute has the same brief warm-up as raising from 0 (mute
-	// now evicts too, user 2026-06-14: the delay is acceptable, and it lets the
-	// decoded set track exactly what is audible). maxSampleSeconds is a HIGH-WATER
+	// first time the instrument is AUDIBLE (volume > 0) and EVICTED when it leaves
+	// the mix (volume 0), so the ~84 MB decoded library tracks only the instruments
+	// currently audible. The mp3 bytes are tiny + SW-cached, so the only real cost
+	// is the decode; a freshly-(re)enabled instrument's first notes skip silently
+	// for the fraction of a second until its buffers land — the brief warm-up the
+	// user accepted (2026-06-14) when raising an instrument from 0. maxSampleSeconds is a HIGH-WATER
 	// mark (only grows, never reset on evict), so the chord gap (gapMs) stays a safe
 	// upper bound: a note can only ring if its buffer is decoded, and decoding raises
 	// maxSampleSeconds, so gapMs always covers any ringing note — no overlap.
 	function urlForRoot(instr, root) {
 		return "snd/" + encodeURIComponent(instr.file + " " + root.file) + ".mp3";
 	}
-	// "Active" = audible in the mix: positive volume AND not muted. This drives the
-	// lazy-decode set, so muting now EVICTS the instrument's samples too (un-mute
-	// re-decodes them — the brief warm-up the user accepted 2026-06-14). isMuted is
-	// hoisted; it is only ever called here at reconcile time, well after init.
+	// "Active" = audible in the mix: positive volume. Drives the lazy-decode set
+	// (a volume-0 instrument is evicted; raising it re-decodes with a brief warm-up).
 	function instrumentActive(prefix) {
 		var el = document.getElementById(prefix + "Vol");
-		return !!(el && parseInt(el.value, 10) > 0) && !isMuted(prefix);
+		return !!(el && parseInt(el.value, 10) > 0);
 	}
 
 	// One sample's fetch + decode, with retries (exponential backoff + jitter; the
@@ -995,7 +991,7 @@
 		if (!(instrumentsEnabled && audioEnabled)) { return false; }
 		var enabled = INSTRUMENTS.filter(function (instr) {
 			var el = document.getElementById(instr.prefix + "Vol");
-			return el && parseInt(el.value, 10) > 0 && !isMuted(instr.prefix);
+			return el && parseInt(el.value, 10) > 0;
 		});
 		if (!enabled.length) { return false; }
 		var instr = enabled[Math.floor(Math.random() * enabled.length)];
@@ -1192,7 +1188,6 @@
 			if (vol > 0) { any = true; }
 		});
 		instrumentsEnabled = any;
-		updateMutedTags();
 		scheduleReconcile();   // lazy-decode newly-active instruments / evict the rest (debounced)
 	}
 
@@ -1200,7 +1195,7 @@
 	// The instrument (Volume/Balance/Width), vinyl (Volume) and main-volume sliders are
 	// presented as rotary dials. Each control's <input type=range> stays in the DOM as the value store
 	// and event source — so ALL existing logic (restoreState, gatherPatch, buildSoundArray,
-	// panFor, presets, Solo/Mute, the #patch= URL) is untouched; the dial is a visual +
+	// panFor, presets, the #patch= URL) is untouched; the dial is a visual +
 	// pointer layer over it. setupDials() runs once at load: it groups each drawer's
 	// slider(s) into a side-by-side .dialRow (the inputs hidden, the numeric score moved
 	// under each dial) and wires drag / wheel / arrow-keys. refreshDial(), called from
@@ -1338,67 +1333,13 @@
 		qsa(".dial").forEach(initDial);
 	}
 
-	/* ---------- "(Muted)" title tags ---------- */
-	// While an instrument or the vinyl bed sits at volume 0 its TITLE gains
-	// a " (Muted)" suffix (user 2026-06-12). The base name is captured from
-	// the pristine HTML on first touch; every volume path funnels through
-	// buildSoundArray (instruments) or setVinylVolume (vinyl), which both
-	// end here. Main Volume is neither an instrument nor vinyl — untagged.
-	function titleElFor(volSliderId) {
-		var slider = document.getElementById(volSliderId);
-		if (!slider) { return null; }
-		var cell = slider;
-		while (cell && (!cell.className || String(cell.className).indexOf("instrumentControl") === -1)) {
-			cell = cell.parentNode;
-			if (!cell || cell === document.body) { return null; }
-		}
-		return cell.querySelector(".instrumentName") || cell.querySelector(".instrumentTitle");
-	}
-
-	// Non-destructive Mute (user 2026-06-14): a "Mute" / "Unmute" toggle BUTTON at
-	// the bottom of each instrument box AND the vinyl box is an extra kill switch ON
-	// TOP of the volume slider — it silences the channel exactly like volume 0
-	// would, but leaves the slider where it is, so a user can mute then un-mute and
-	// get their chosen level back without sliding up from zero. The button reads
-	// "Mute" while live and "Unmute" while muted; aria-pressed carries the state.
-	// Persisted per channel as the "<prefix>Muted" key; read live wherever a
-	// channel's effective level matters (the note pickers, the vinyl gain, the
-	// "(Muted)" tag).
-	function isMuted(prefix) {
-		var btn = document.querySelector('.muteButton[data-prefix="' + prefix + '"]');
-		return !!(btn && btn.getAttribute("aria-pressed") === "true");
-	}
-
-	// Reflect a channel's mute state onto its toggle button: flip the label
-	// (Mute ↔ Unmute) and aria-pressed (what isMuted reads + the CSS engaged look).
-	// Visual only — callers persist "<prefix>Muted" and re-apply the audio.
-	function setMuteButton(btn, muted) {
-		if (!btn) { return; }
-		btn.setAttribute("aria-pressed", muted ? "true" : "false");
-		btn.value = muted ? "Unmute" : "Mute";
-	}
-
-	function updateMutedTags() {
-		function tag(volSliderId) {
-			var t = titleElFor(volSliderId);
-			if (!t) { return; }
-			if (t._baseName === undefined) { t._baseName = t.textContent; }
-			var v = parseInt(document.getElementById(volSliderId).value, 10);
-			var muted = (v === 0) || isMuted(volSliderId.replace(/Vol$/, ""));
-			t.textContent = t._baseName + (muted ? " (Muted)" : "");
-		}
-		INSTRUMENTS.forEach(function (instr) { tag(instr.prefix + "Vol"); });
-		tag("vinylVol");
-	}
-
-	// "Would the bed actually be heard?" — false when the slider is 0, the master
-	// is 0, or vinyl is muted (the effective gain is then 0). When false the bed
-	// is PAUSED rather than run silently (user 2026-06-14): the unrouted silent
-	// ghost already holds the media session, so there's no point spinning the noise
-	// stream's DSP for nothing. The pause handlers + focus-yield below also gate on
-	// this, so an intentional silence-pause is never auto-resumed or miscounted.
+	// "Would the bed actually be heard?" — false when the slider is 0 or the master
+	// is 0 (the effective gain is then 0). When false the bed is PAUSED rather than
+	// run silently (user 2026-06-14): the unrouted silent ghost already holds the
+	// media session, so there's no point spinning the noise stream's DSP for nothing.
+	// The pause handlers + focus-yield below also gate on this, so an intentional
+	// silence-pause is never auto-resumed or miscounted.
 	function vinylAudible() {
-		if (isMuted("vinyl")) { return false; }
 		var el = qs("#vinylVol");
 		var v = el ? parseInt(el.value, 10) : 0;
 		return vinylScale(v) * masterScale() > 0;   // 0 when slider 0 OR master 0
@@ -1407,15 +1348,14 @@
 	function setVinylVolume() {
 		var slider = qs("#vinylVol");
 		var v = parseInt(slider.value, 10);   // 0–100 (0 = silent)
-		// The bed's level: slider scale × master (the Mute button forces it to 0).
-		var vol = isMuted("vinyl") ? 0 : vinylScale(v) * masterScale();   // 1–100 -> 1%–50%
+		// The bed's level: slider scale × master.
+		var vol = vinylScale(v) * masterScale();   // 1–100 -> 1%–50%
 		if (vinyl._gain) {
 			vinyl._gain.gain.value = vol;   // routed: linear Web Audio gain, same loudness on every browser
 		} else {
 			vinyl.volume = vol;             // not (yet) routed: native element volume
 		}
 		updateVolLabel(slider);
-		updateMutedTags();
 		// Play the bed only while it'd be heard; otherwise PAUSE it (the ghost holds
 		// the media session).
 		if (audioEnabled && vinylAudible()) {
@@ -1508,55 +1448,7 @@
 		qs("#delayCheck").checked = (dly === null) ? DELAY_DEFAULT : (dly === "true");
 		applyDelay();
 
-		// Mute buttons (v164): each channel's persisted "<prefix>Muted" key sets the
-		// button's label (Mute / Unmute) + aria-pressed.
-		qsa(".muteButton").forEach(function (btn) {
-			setMuteButton(btn, lsGet(btn.getAttribute("data-prefix") + "Muted") === "true");
-		});
 		updateChordToneVisibility();
-	}
-
-	/* ---------- per-instrument Solo ---------- */
-	// A Solo button at the bottom of every instrument drawer (user 2026-06-12):
-	// it zeroes every OTHER instrument's volume (the soloed one keeps its level;
-	// vinyl is a distinct category and is untouched). It goes through the sliders,
-	// so persistence, labels, summaries and the "(Muted)" tags all follow for free
-	// via buildSoundArray. (Distinct from the non-destructive Mute / Unmute BUTTON
-	// (v164, setupMuteButtons) next to it, which silences without zeroing the
-	// slider. The original destructive "Mute" button that zeroed the box's own
-	// slider was removed 2026-06-14.)
-	function setupSoloMute() {
-		qsa(".soloButton").forEach(function (btn) {
-			btn.addEventListener("click", function () {
-				var keep = btn.getAttribute("data-prefix");
-				INSTRUMENTS.forEach(function (instr) {
-					if (instr.prefix !== keep) {
-						document.getElementById(instr.prefix + "Vol").value = "0";
-					}
-				});
-				buildSoundArray();   // persists + relabels every volume
-				syncUrl();           // Solo zeroed other volumes — reflect the new patch in the URL
-			});
-		});
-	}
-
-	// The Mute / Unmute buttons (v164) — the non-destructive kill switch. Clicking
-	// one flips its state, persists the channel's "<prefix>Muted" key and re-applies
-	// the level live: vinyl re-scales its gain (pausing the bed at silence), an
-	// instrument simply stops being picked (playSound reads isMuted live).
-	// buildSoundArray / setVinylVolume also refresh the "(Muted)" tag. Unlike the
-	// old checkbox, a button has no Firefox-restorable form state across reload —
-	// restoreState sets each button's label from the "<prefix>Muted" key on load.
-	function setupMuteButtons() {
-		qsa(".muteButton").forEach(function (btn) {
-			btn.addEventListener("click", function () {
-				var prefix = btn.getAttribute("data-prefix");
-				var muted = btn.getAttribute("aria-pressed") !== "true";   // toggle
-				setMuteButton(btn, muted);
-				lsSet(prefix + "Muted", muted ? "true" : "false");
-				if (prefix === "vinyl") { setVinylVolume(); } else { buildSoundArray(); }
-			});
-		});
 	}
 
 	/* ---------- Memory: five permanent presets + four profile slots ---------- */
@@ -1722,7 +1614,7 @@
 	// hash (#patch=<base64url JSON>) on every change, so the URL always reflects the live
 	// state and a patch can be shared just by copying the link. On load a #patch= patch
 	// overrides saved settings (folded into localStorage so restoreState applies +
-	// persists it, with mutes cleared so it plays as shared). Hash (not query) keeps it
+	// persists it so it plays as shared). Hash (not query) keeps it
 	// client-side — never sent to the server or cached by the service worker.
 	var URL_PATCH_PARAM = "patch";   // the URL hash key: #patch=<base64url JSON> (renamed from "p" 2026-06-16)
 	var urlSyncTimer = null;
@@ -1762,8 +1654,6 @@
 			if (typeof v === "boolean") { v = v ? "true" : "false"; }
 			lsSet(k, String(v));
 		});
-		// a shared patch defines its mix by volume — drop any stale local mutes
-		qsa(".muteButton").forEach(function (btn) { lsSet(btn.getAttribute("data-prefix") + "Muted", "false"); });
 	}
 
 	// Applies a profile object to the app — shared by the slot Recalls and
@@ -1826,16 +1716,7 @@
 			lsSet("delay", profile.delay ? "true" : "false");
 			applyDelay();
 		}
-		// Recall / preset clears every channel's mute (user 2026-06-14): a recalled
-		// mix must play exactly as stored. Mutes aren't part of a profile (an "off"
-		// channel is stored as Vol 0), so a leftover mute must not silence a channel
-		// the profile turns on. Cleared BEFORE buildSoundArray / setVinylVolume so the
-		// recalled levels apply un-muted.
-		qsa(".muteButton").forEach(function (btn) {
-			setMuteButton(btn, false);
-			lsSet(btn.getAttribute("data-prefix") + "Muted", "false");
-		});
-		buildSoundArray();   // instrumentsEnabled + persists vols + "(Muted)" tags
+		buildSoundArray();   // instrumentsEnabled + persists vols
 		setVinylVolume();    // the bed re-scales live if playing
 		applyMasterVol();    // a profile carrying masterVol (Default / URL patch) re-scales the instrument mix live
 		updateChordToneVisibility();
@@ -2342,7 +2223,7 @@
 		// resume; the 400ms debounce also lets a deliberate lock-screen pause win.
 		vinyl.addEventListener("pause", function () {
 			// Only fight a SPURIOUS pause (OS background / focus steal) — a deliberate
-			// silence-pause (vinyl 0 / master 0 / muted) must stay paused and must not
+			// silence-pause (vinyl 0 / master 0) must stay paused and must not
 			// count toward the focus-yield, so gate the whole recovery on vinylAudible().
 			if (audioEnabled && vinylAudible()) {
 				if (shouldYieldAudioFocus(vinyl)) { stopAudio(); return; }
@@ -2357,8 +2238,6 @@
 		setupMediaSession();
 		setupInstall();
 		setupSettingsBoxes();
-		setupSoloMute();
-		setupMuteButtons();
 		setupMemory();
 
 		// Some OSes pause background media; when the page returns to the
@@ -2583,7 +2462,7 @@
 			setupDials();   // present the instrument + vinyl sliders as rotary dials (once, post-restore)
 			// Mirror every subsequent control change into the URL (#patch=) so it always
 			// reflects the live patch; coalesced so a slider drag doesn't spam history.
-			// (Programmatic changes — recall/preset/Solo — call syncUrl directly.)
+			// (Programmatic changes — recall/preset — call syncUrl directly.)
 			document.addEventListener("input", syncUrlSoon, true);
 			document.addEventListener("change", syncUrlSoon, true);
 			syncUrl();   // reflect the just-restored patch in the URL immediately

@@ -117,9 +117,8 @@ input[type="button"]:active:not(:disabled),
 	box-shadow:0 0 6px rgba(255, 255, 0, 1), 0 0 14px rgba(255, 255, 0, 0.9);
 }
 
-/* Solo/Mute (instrument drawers) and Store/Recall (Memory drawer) button
-   pairs: side by side, equal widths, inheriting the off-white button look. */
-.soloMuteRow,
+/* Store/Recall (Memory drawer) button pairs: side by side, equal widths,
+   inheriting the off-white button look. */
 .memoryRow {
 	display:flex;
 	gap:10px;
@@ -196,7 +195,6 @@ input[type="button"]:active:not(:disabled),
 .memoryTitleRow.editing .memoryTitleEdit {
 	display:block;
 }
-.soloMuteRow input[type="button"],
 .memoryRow input[type="button"] {
 	flex:1 1 0;
 	min-width:0;
@@ -242,25 +240,6 @@ input[type="button"]:active:not(:disabled),
 }
 .presetGrid button:active {
 	box-shadow:0 0 6px rgba(255, 255, 0, 1), 0 0 14px rgba(255, 255, 0, 0.9);
-}
-
-/* Non-destructive Mute / Unmute button (v164): a full-width toggle directly
-   under the Solo button (and at the bottom of the vinyl box). It inherits the
-   off-white button look; while engaged (muted) it fills with the theme accent
-   and reads "Unmute" so the muted state is obvious. */
-.muteButtonRow {
-	width:90%;
-	margin:8px auto 2px auto;
-	display:flex;
-}
-.muteButtonRow input[type="button"] {
-	flex:1 1 0;
-	min-width:0;
-}
-.muteButton[aria-pressed="true"] {
-	background-color:#2850FF;
-	color:#ffffff;
-	border-color:#2850FF;
 }
 
 .notes {
