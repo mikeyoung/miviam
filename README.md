@@ -32,7 +32,7 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 - **Sleep timer** — fades everything out after up to 60 minutes.
 - **Presets** — five one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, and **Chamber**.
 - **Memory slots** — four user slots to **Store** / **Recall** your own mixes (rename them; press‑and‑hold a slot to clear it).
-- **Shareable patches** — the complete state of every control is encoded in the page URL (`#p=…`), so you can **share a sound just by copying the link**.
+- **Shareable patches** — the complete state of every control is encoded in the page URL (`#patch=…`), so you can **share a sound just by copying the link**.
 - **Installable & offline** — a Progressive Web App: install it to your home screen or desktop and it runs without a network connection.
 - **Remembers your settings** between visits (stored locally in your browser).
 

@@ -1338,7 +1338,7 @@
 	function restoreState() {
 		migrateScaleV2();        // saved 0–20 mixes → the percent scales, once
 		migrateVinylScaleV3();   // vinyl percent (0–33) → the 101-position scale, once
-		loadUrlPatchIntoStorage();   // a shared #p= patch overrides saved settings (already new-scale)
+		loadUrlPatchIntoStorage();   // a shared #patch= patch overrides saved settings (already new-scale)
 
 		qsa(".instrumentVol").forEach(function (slider) {
 			var c = lsGet(slider.id);
@@ -1366,7 +1366,7 @@
 
 		var ts = lsGet("totalSoundsSelect");
 		qs("#totalSoundsSelect").value = (ts !== null) ? ts : TOTAL_SOUNDS_DEFAULT;
-		// A shared #p= patch can carry an out-of-range chimes value; if it doesn't
+		// A shared #patch= patch can carry an out-of-range chimes value; if it doesn't
 		// match an <option> (selectedIndex -1) fall back to the default so the engine
 		// never schedules NaN players (mirrors the speed select + applyMemoryProfile).
 		if (qs("#totalSoundsSelect").selectedIndex === -1) { qs("#totalSoundsSelect").value = TOTAL_SOUNDS_DEFAULT; }
@@ -1627,12 +1627,12 @@
 
 	/* ---------- Shareable patch in the URL (user 2026-06-14) ---------- */
 	// The full current patch (gatherPatch incl. main volume) is mirrored into the URL
-	// hash (#p=<base64url JSON>) on every change, so the URL always reflects the live
-	// state and a patch can be shared just by copying the link. On load a #p= patch
+	// hash (#patch=<base64url JSON>) on every change, so the URL always reflects the live
+	// state and a patch can be shared just by copying the link. On load a #patch= patch
 	// overrides saved settings (folded into localStorage so restoreState applies +
 	// persists it, with mutes cleared so it plays as shared). Hash (not query) keeps it
 	// client-side — never sent to the server or cached by the service worker.
-	var URL_PATCH_PARAM = "p";
+	var URL_PATCH_PARAM = "patch";   // renamed from "p" 2026-06-16; patchFromUrl still READS legacy "p=" links
 	var urlSyncTimer = null;
 	function encodePatch(p) {
 		// the patch JSON is ASCII (keys + number/word/boolean values) so btoa is safe
@@ -1645,7 +1645,10 @@
 		} catch (e) { return null; }
 	}
 	function patchFromUrl() {
-		var m = (location.hash || "").match(/[#&]p=([^&]+)/);
+		var h = location.hash || "";
+		// Param is "patch="; the legacy "p=" is still READ so links shared before the
+		// rename keep working (new writes always use "patch=", see URL_PATCH_PARAM).
+		var m = h.match(/[#&]patch=([^&]+)/) || h.match(/[#&]p=([^&]+)/);
 		return m ? decodePatch(m[1]) : null;
 	}
 	function syncUrl() {
@@ -1658,7 +1661,7 @@
 		if (urlSyncTimer) { clearTimeout(urlSyncTimer); }
 		urlSyncTimer = setTimeout(syncUrl, 200);   // coalesce slider drags
 	}
-	// On load: fold a #p= patch into localStorage (only KNOWN fields; restoreState then
+	// On load: fold a #patch= patch into localStorage (only KNOWN fields; restoreState then
 	// validates each) so the shared patch becomes the applied + persisted state.
 	function loadUrlPatchIntoStorage() {
 		var patch = patchFromUrl();
@@ -2511,7 +2514,7 @@
 			restoreState();
 			buildSoundArray();
 			setVinylVolume();
-			// Mirror every subsequent control change into the URL (#p=) so it always
+			// Mirror every subsequent control change into the URL (#patch=) so it always
 			// reflects the live patch; coalesced so a slider drag doesn't spam history.
 			// (Programmatic changes — recall/preset/Solo — call syncUrl directly.)
 			document.addEventListener("input", syncUrlSoon, true);
