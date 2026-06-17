@@ -2131,21 +2131,10 @@
 				}
 			});
 		});
-		// Tapping anywhere outside an open box also closes it (user
-		// 2026-06-12). pointerup = "a tap ended here": a scroll ends in
-		// pointercancel instead, so scrolling the page never slams a box
-		// shut, and a slider drag that wanders outside still ends on the
-		// pointer-captured slider, inside its box. Capture phase so nothing
-		// that stops propagation can strand a box open. Presses inside the
-		// box (sliders, Solo/Mute, its own toggle) are exempt; a tap on
-		// ANOTHER box's toggle closes this one here and the accordion in
-		// the toggle's click handler proceeds as always. click fallback for
-		// non-Pointer browsers.
-		document.addEventListener(window.PointerEvent ? "pointerup" : "click", function (e) {
-			qsa(".settingsBox.open").forEach(function (box) {
-				if (!box.contains(e.target)) { setBoxOpen(box, false); }
-			});
-		}, true);
+		// (Removed 2026-06-16, user request: an outside tap no longer closes an open
+		// box — only the box's own +/− toggle, or opening another box, closes it. The
+		// old outside-close also fought the rotary dials, whose vertical drag ends with
+		// the pointer outside the box and used to slam it shut on release.)
 	}
 
 	/* ---------- background / lock-screen playback (Media Session) ---------- */
