@@ -1238,8 +1238,8 @@
 	}
 
 	/* ---------- Rotary dials (user 2026-06-16) ---------- */
-	// The instrument (Volume/Balance/Width) and vinyl (Volume) sliders are presented as
-	// rotary dials. Each control's <input type=range> stays in the DOM as the value store
+	// The instrument (Volume/Balance/Width), vinyl (Volume) and main-volume sliders are
+	// presented as rotary dials. Each control's <input type=range> stays in the DOM as the value store
 	// and event source — so ALL existing logic (restoreState, gatherPatch, buildSoundArray,
 	// panFor, presets, Solo/Mute, the #patch= URL) is untouched; the dial is a visual +
 	// pointer layer over it. setupDials() runs once at load: it groups each drawer's
@@ -1347,10 +1347,10 @@
 		});
 	}
 	function setupDials() {
-		// In each instrument / vinyl drawer, group the slider(s) into one side-by-side row.
+		// In each instrument / vinyl / main-volume drawer, group the slider(s) into one row.
 		qsa(".settingsBoxDrawer").forEach(function (drawer) {
 			var inputs = Array.prototype.slice.call(
-				drawer.querySelectorAll(".instrumentVol, .instrumentBalance, .instrumentPanWidth, .vinylVol"));
+				drawer.querySelectorAll(".instrumentVol, .instrumentBalance, .instrumentPanWidth, .vinylVol, .masterVol"));
 			if (!inputs.length) { return; }
 			var row = document.createElement("div");
 			row.className = "dialRow";
@@ -2111,7 +2111,7 @@
 		var btn = box.querySelector(".settingsBoxToggle");
 		box._animating = true;
 		if (open) { box.classList.add("open"); } else { box.classList.remove("open"); }
-		btn.textContent = open ? "−" : "+";   // U+2212 minus sign (wider than a hyphen)
+		btn.textContent = open ? "▴" : "▾";   // caret: up = open, down = closed
 		btn.setAttribute("aria-expanded", open ? "true" : "false");
 		(open ? slideOpen : slideClosed)(drawer, function () { box._animating = false; });
 	}
