@@ -346,6 +346,64 @@ input[type="checkbox"].bigCheck {
 	cursor:pointer;
 }
 
+/* Rotary DIALS (user 2026-06-16) — the instrument (Volume/Balance/Width) and vinyl
+   (Volume) sliders are presented as dials. Each control's <input type=range> stays in
+   the DOM (hidden) as the value store; the dial is a visual + pointer layer over it
+   (setupDials in main.js). Dials sit side by side with generous spacing for fat fingers,
+   the numeric score under each; the face matches the off-white buttons, with a short
+   black line indicator. */
+.dialRow {
+	display:flex;
+	justify-content:space-around;
+	align-items:flex-start;
+	margin:12px 0 2px;
+}
+.dialCell {
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+	flex:1 1 0;
+	min-width:0;
+}
+.dialCell input[type="range"] { display:none; }   /* the hidden source-of-truth */
+.dialLabel {
+	font-size:0.85em;
+	margin-bottom:6px;
+	white-space:nowrap;
+}
+.dial {
+	/* Legacy fallback (browsers without aspect-ratio / min(), e.g. iOS <15): a bounded
+	   square dial. Modern browsers override both below via @supports. */
+	width:64px;
+	height:64px;
+	cursor:pointer;
+	touch-action:none;            /* drag the dial without scrolling the page */
+	-webkit-user-select:none;
+	user-select:none;
+	-webkit-touch-callout:none;
+	outline:none;
+}
+@supports (aspect-ratio: 1 / 1) {
+	/* Modern: size to the cell (so 3 dials always leave a gap) and stay circular. */
+	.dial { width:min(64px, 70%); height:auto; aspect-ratio:1 / 1; }
+}
+.dial svg { display:block; width:100%; height:100%; }
+.dialFace {
+	fill:#f5f2e9;                 /* matches the buttons */
+	stroke:#b9b3a4;               /* matches the button border */
+	stroke-width:3;
+}
+.dial:focus-visible .dialFace { stroke:#16284a; stroke-width:4; }   /* keyboard focus */
+.dialIndicator {
+	stroke:#111111;               /* short black indicator line */
+	stroke-width:6;
+	stroke-linecap:round;
+}
+.dialCell .volVal {
+	margin-top:6px;
+	font-weight:bold;
+}
+
 /* The instrument's name heads its block (above the three sliders, v46);
    slightly larger so the section reads as a unit. The .instrumentName span
    inside it is the play-flash target. */

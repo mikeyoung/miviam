@@ -1158,6 +1158,7 @@
 				: slider.value;
 		}
 		updateSummary(slider.id);
+		refreshDial(slider);   // keep the rotary dial's indicator in sync (no-op before setupDials)
 	}
 
 	// Settings-box summary header, e.g. "VOL: 100   BAL: L10   PAN: 0" — the
@@ -1234,6 +1235,148 @@
 		instrumentsEnabled = any;
 		updateMutedTags();
 		scheduleReconcile();   // lazy-decode newly-active instruments / evict the rest (debounced)
+	}
+
+	/* ---------- Rotary dials (user 2026-06-16) ---------- */
+	// The instrument (Volume/Balance/Width) and vinyl (Volume) sliders are presented as
+	// rotary dials. Each control's <input type=range> stays in the DOM as the value store
+	// and event source — so ALL existing logic (restoreState, gatherPatch, buildSoundArray,
+	// panFor, presets, Solo/Mute, the #patch= URL) is untouched; the dial is a visual +
+	// pointer layer over it. setupDials() runs once at load: it groups each drawer's
+	// slider(s) into a side-by-side .dialRow (the inputs hidden, the numeric score moved
+	// under each dial) and wires drag / wheel / arrow-keys. refreshDial(), called from
+	// updateVolLabel, keeps the indicator in sync with every programmatic value change.
+	var DIAL_SWEEP_DEG = 270;          // total angular travel (min..max), centred on 12 o'clock
+	var DIAL_DRAG_PX = 180;            // vertical drag (px) that sweeps the full min..max
+	var DIAL_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">' +
+		'<circle class="dialFace" cx="50" cy="50" r="45"></circle>' +
+		'<line class="dialIndicator" x1="50" y1="30" x2="50" y2="12" transform="rotate(0 50 50)"></line>' +
+		'</svg>';
+
+	function dialLabelFor(input) {
+		if (input.classList.contains("instrumentBalance")) { return "Balance"; }
+		if (input.classList.contains("instrumentPanWidth")) { return "Width"; }
+		return "Volume";   // instrumentVol or vinylVol
+	}
+	function dialFraction(input) {
+		var min = parseFloat(input.min), max = parseFloat(input.max), v = parseFloat(input.value);
+		if (!(max > min)) { return 0; }
+		var f = (v - min) / (max - min);
+		return f < 0 ? 0 : (f > 1 ? 1 : f);
+	}
+	function renderDial(dial) {
+		var input = document.getElementById(dial.getAttribute("data-for"));
+		if (!input) { return; }
+		var angle = -DIAL_SWEEP_DEG / 2 + dialFraction(input) * DIAL_SWEEP_DEG;   // -135°..+135°, 0°=up
+		var ind = dial.querySelector(".dialIndicator");
+		if (ind) { ind.setAttribute("transform", "rotate(" + angle.toFixed(1) + " 50 50)"); }
+		dial.setAttribute("aria-valuenow", input.value);
+		if (input.classList.contains("instrumentBalance")) {
+			dial.setAttribute("aria-valuetext", balanceLabel(input.value));
+		}
+	}
+	function refreshDial(input) {   // re-sync a dial after a programmatic value change
+		var dial = input && document.querySelector('.dial[data-for="' + input.id + '"]');
+		if (dial) { renderDial(dial); }
+	}
+	function dialCommit(input, raw, fireChange) {
+		var min = parseFloat(input.min), max = parseFloat(input.max), step = parseFloat(input.step) || 1;
+		var v = Math.round(raw / step) * step;
+		if (v < min) { v = min; } else if (v > max) { v = max; }
+		if (step >= 1) { v = Math.round(v); }
+		if (String(v) !== String(input.value)) {
+			input.value = v;
+			input.dispatchEvent(new Event("input", { bubbles: true }));   // live: drives buildSoundArray/setVinylVolume/syncUrl + refreshDial
+		}
+		if (fireChange) { input.dispatchEvent(new Event("change", { bubbles: true })); }
+	}
+	function initDial(dial) {
+		var input = document.getElementById(dial.getAttribute("data-for"));
+		if (!input) { return; }
+		dial.innerHTML = DIAL_SVG;
+		dial.setAttribute("role", "slider");
+		dial.setAttribute("tabindex", "0");
+		dial.setAttribute("aria-label", dialLabelFor(input));
+		dial.setAttribute("aria-valuemin", input.min);
+		dial.setAttribute("aria-valuemax", input.max);
+		renderDial(dial);
+
+		// Drag is VERTICAL only — drag UP to increase, DOWN to decrease (NOT circular;
+		// the user only moves up/down, the indicator line just rotates to show the value).
+		// The move/up listeners live on the WINDOW for the whole gesture so tracking never
+		// drops when the finger leaves the small dial; they detach on release.
+		var startY = 0, startV = 0, moved = false, activeId = null;
+		function dialMove(e) {
+			if (activeId === null || e.pointerId !== activeId) { return; }
+			var min = parseFloat(input.min), max = parseFloat(input.max);
+			var f = (startV - min) / (max - min) + (startY - e.clientY) / DIAL_DRAG_PX;   // only clientY matters: up = increase
+			if (f < 0) { f = 0; } else if (f > 1) { f = 1; }
+			moved = true;
+			dialCommit(input, min + f * (max - min), false);
+			e.preventDefault();
+		}
+		function dialUp(e) {
+			if (activeId === null || (e.pointerId != null && e.pointerId !== activeId)) { return; }
+			window.removeEventListener("pointermove", dialMove);
+			window.removeEventListener("pointerup", dialUp);
+			window.removeEventListener("pointercancel", dialUp);
+			activeId = null;
+			if (moved) { input.dispatchEvent(new Event("change", { bubbles: true })); }   // commit, like releasing a native slider
+		}
+		dial.addEventListener("pointerdown", function (e) {
+			activeId = e.pointerId; moved = false; startY = e.clientY; startV = parseFloat(input.value);
+			window.addEventListener("pointermove", dialMove);
+			window.addEventListener("pointerup", dialUp);
+			window.addEventListener("pointercancel", dialUp);
+			e.preventDefault();
+		});
+		dial.addEventListener("wheel", function (e) {
+			e.preventDefault();
+			var step = parseFloat(input.step) || 1;
+			dialCommit(input, parseFloat(input.value) + (e.deltaY < 0 ? step : -step), true);
+		}, { passive: false });
+		dial.addEventListener("keydown", function (e) {
+			var step = parseFloat(input.step) || 1, d = 0;
+			if (e.key === "ArrowUp" || e.key === "ArrowRight") { d = step; }
+			else if (e.key === "ArrowDown" || e.key === "ArrowLeft") { d = -step; }
+			else if (e.key === "Home") { dialCommit(input, parseFloat(input.min), true); e.preventDefault(); return; }
+			else if (e.key === "End") { dialCommit(input, parseFloat(input.max), true); e.preventDefault(); return; }
+			else { return; }
+			dialCommit(input, parseFloat(input.value) + d, true);
+			e.preventDefault();
+		});
+	}
+	function setupDials() {
+		// In each instrument / vinyl drawer, group the slider(s) into one side-by-side row.
+		qsa(".settingsBoxDrawer").forEach(function (drawer) {
+			var inputs = Array.prototype.slice.call(
+				drawer.querySelectorAll(".instrumentVol, .instrumentBalance, .instrumentPanWidth, .vinylVol"));
+			if (!inputs.length) { return; }
+			var row = document.createElement("div");
+			row.className = "dialRow";
+			drawer.insertBefore(row, inputs[0].previousElementSibling || inputs[0]);
+			inputs.forEach(function (input) {
+				var labelDiv = input.previousElementSibling;   // the "<Name>: <span>" subLabel row
+				var cell = document.createElement("div");
+				cell.className = "dialCell";
+				var lab = document.createElement("div");
+				lab.className = "dialLabel";
+				lab.textContent = dialLabelFor(input);
+				var dial = document.createElement("div");
+				dial.className = "dial";
+				dial.setAttribute("data-for", input.id);
+				var val = document.getElementById(input.id + "Val");
+				cell.appendChild(lab);
+				cell.appendChild(dial);
+				if (val) { cell.appendChild(val); }   // numeric score under the dial
+				cell.appendChild(input);              // hidden source-of-truth (CSS display:none)
+				row.appendChild(cell);
+				if (labelDiv && labelDiv.classList && labelDiv.classList.contains("subLabel")) {
+					labelDiv.parentNode.removeChild(labelDiv);
+				}
+			});
+		});
+		qsa(".dial").forEach(initDial);
 	}
 
 	/* ---------- "(Muted)" title tags ---------- */
@@ -2511,6 +2654,7 @@
 			restoreState();
 			buildSoundArray();
 			setVinylVolume();
+			setupDials();   // present the instrument + vinyl sliders as rotary dials (once, post-restore)
 			// Mirror every subsequent control change into the URL (#patch=) so it always
 			// reflects the live patch; coalesced so a slider drag doesn't spam history.
 			// (Programmatic changes — recall/preset/Solo — call syncUrl directly.)
