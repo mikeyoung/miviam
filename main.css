@@ -404,6 +404,17 @@ input[type="checkbox"].bigCheck {
 	font-weight:bold;
 }
 
+/* Main Volume dial — standalone (out of the collapsible box, still inside advanced
+   settings). Fixed size since it doesn't share a side-by-side row. */
+.masterDial {
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+}
+.masterDial input[type="range"] { display:none; }
+.masterDial .dial { width:64px; height:64px; }
+.masterDial .volVal { margin-top:6px; font-weight:bold; }
+
 /* The instrument's name heads its block (above the three sliders, v46);
    slightly larger so the section reads as a unit. The .instrumentName span
    inside it is the play-flash target. */

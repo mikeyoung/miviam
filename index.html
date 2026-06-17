@@ -102,15 +102,10 @@
 						<tr>
 							<td colspan="2" class="instrumentControl">
 								<div class="label centered instrumentTitle">Main Volume</div>
-								<div class="settingsBox">
-									<div class="settingsBoxHeader">
-										<span class="settingsSummary" id="masterSummary">VOL: 100</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Main volume settings">▾</button>
-									</div>
-									<div class="settingsBoxDrawer">
-										<div class="label centered subLabel">Volume: <span id="masterVolVal" class="volVal">100</span></div>
-										<input id="masterVol" class="masterVol" type="range" min="0" max="100" step="1" value="100" />
-									</div>
+								<div class="masterDial">
+									<div class="dial" data-for="masterVol"></div>
+									<span id="masterVolVal" class="volVal">100</span>
+									<input id="masterVol" class="masterVol" type="range" min="0" max="100" step="1" value="100" />
 								</div>
 							</td>
 						</tr>
@@ -123,7 +118,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="bassSummary">VOL: 100&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Bass settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Bass settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="bassVolVal" class="volVal">100</span></div>
@@ -146,7 +141,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="fluteSummary">VOL: 50&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Flute settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Flute settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="fluteVolVal" class="volVal">50</span></div>
@@ -169,7 +164,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="rhodesSummary">VOL: 100&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Rhodes settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Rhodes settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="rhodesVolVal" class="volVal">100</span></div>
@@ -192,7 +187,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="vibesSummary">VOL: 80&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vibes settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vibes settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="vibesVolVal" class="volVal">80</span></div>
@@ -215,7 +210,7 @@
 									<div class="settingsBox">
 										<div class="settingsBoxHeader">
 											<span class="settingsSummary" id="celesteSummary">VOL: 30&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-											<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Celeste settings">▾</button>
+											<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Celeste settings">▼</button>
 										</div>
 										<div class="settingsBoxDrawer">
 											<div class="label centered subLabel">Volume: <span id="celesteVolVal" class="volVal">30</span></div>
@@ -238,7 +233,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="celloSummary">VOL: 40&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Cello settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Cello settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="celloVolVal" class="volVal">40</span></div>
@@ -261,7 +256,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="violinsSummary">VOL: 5&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Violins settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Violins settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="violinsVolVal" class="volVal">5</span></div>
@@ -284,7 +279,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="choirSummary">VOL: 10&nbsp;&nbsp;&nbsp;BAL: 0&nbsp;&nbsp;&nbsp;WID: 25</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Choir settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Choir settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="choirVolVal" class="volVal">10</span></div>
@@ -312,12 +307,11 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="vinylSummary">VOL: 15</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vinyl settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Vinyl settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="label centered subLabel">Volume: <span id="vinylVolVal" class="volVal">20</span></div>
 										<input id="vinylVol" class="vinylVol" type="range" min="0" max="100" step="1" value="20" />
-										<div class="label centered subLabel"><label>Delay: <input type="checkbox" id="vinylDelayCheck" class="bigCheck" autocomplete="off" checked /></label></div>
 										<div class="muteButtonRow"><input type="button" class="muteButton" data-prefix="vinyl" value="Mute" aria-pressed="false" /></div>
 									</div>
 								</div>
@@ -372,7 +366,7 @@
 								<div class="settingsBox">
 									<div class="settingsBoxHeader">
 										<span class="settingsSummary" id="memorySummary">Profiles</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Memory settings">▾</button>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Memory settings">▼</button>
 									</div>
 									<div class="settingsBoxDrawer">
 										<div class="presetGrid">
