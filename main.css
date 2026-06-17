@@ -325,6 +325,7 @@ td {
 .instrumentControl {
 	text-align:center;
 	padding:26px 0;
+	color:#ffffff;               /* white text for the controls (incl. the standalone Main Volume value) */
 }
 
 .subLabel {
@@ -492,12 +493,11 @@ input[type="checkbox"].bigCheck {
 	box-sizing:border-box;
 	width:90%;
 	margin:8px auto 0;
-	border:1px solid #ffffff;
-	border-radius:0;             /* hard corners */
+	border:none;                 /* box outline removed (user 2026-06-17): controls show directly */
 	color:#ffffff;
 }
 .settingsBoxHeader {
-	display:flex;
+	display:none;                /* summary + expand/collapse toggle removed — boxes are always open */
 	align-items:center;
 	justify-content:space-between;
 	gap:12px;                    /* minimum clearance between summary and button */
@@ -524,7 +524,7 @@ input[type="checkbox"].bigCheck {
 	cursor:pointer;
 }
 .settingsBoxDrawer {
-	display:none;                /* opened/closed by main.js (slideOpen/slideClosed) */
+	display:block;               /* always visible — the controls are no longer in a collapsible box */
 	padding:0 0 16px;            /* no side padding: sliders measure a true 90% of the box */
 	text-align:center;           /* labels centred over their sliders, as before */
 }
