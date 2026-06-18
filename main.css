@@ -18,15 +18,16 @@ body, input, select {
 	text-align:center;
 }
 
-/* Mode / Chord Tone / Note rows: each column is as wide as its longest
-   content, so centred cells drift apart — right-align the labels and
-   left-align the selects so every label sits next to its control
-   (user 2026-06-11). */
-.modeTable td.label {
-	text-align:right;
-}
-.modeTable td:last-child {
-	text-align:left;
+/* Options sub-section (user 2026-06-17): Mode / Chord Tone (or Note) / Chime
+   Frequency / Speed / Direction / Instrument Delay as six evenly-spaced rows.
+   The hidden Chord-Tone-or-Note row drops out of the flex flow, so the visible
+   rows stay evenly gapped. */
+.optionRows {
+	display:flex;
+	flex-direction:column;
+	align-items:center;
+	gap:14px;
+	margin:6px 0;
 }
 
 body {

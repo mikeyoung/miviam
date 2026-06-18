@@ -40,64 +40,6 @@
 				</div>
 				<div id="settings">
 					<br /><br />
-					<!-- Playback mode (v72): "Chord" = the chord-wheel sampler engine
-					     (60 s chord states, then a brief silent gap so two chords
-					     never overlap); "Classic" = the original ambient texture, now
-					     drawn from the same sampler (selected note, random octave).
-					     Persisted; default Chord. -->
-					<table class="modeTable">
-						<tr>
-							<td class="label">Mode:&nbsp;</td>
-							<td>
-								<select id="modeSelect">
-									<option value="chord" selected="selected">Chord</option>
-									<option value="classic">Classic</option>
-								</select>
-							</td>
-						</tr>
-						<!-- Chord quality (v73): visible only while Chord mode is active;
-						     drives the note pool, live. -->
-						<tr id="chordToneRow">
-							<td class="label">Chord Tone:&nbsp;</td>
-							<td>
-								<!-- Title-case display labels (user 2026-06-11); the VALUES stay
-								     the CHORD_FORMULAS keys (or "RANDOM") — they are persisted
-								     (chordTone) and validated on restore, so they must not change.
-								     "Random" (default, user 2026-06-14) is NOT a formula: each
-								     3-min chord then picks one of the five at random. -->
-								<select id="chordToneSelect">
-									<option value="RANDOM" selected="selected">Random</option>
-									<option value="MAJOR">Major</option>
-									<option value="MINOR">Minor</option>
-									<option value="DOM_7">Dom 7</option>
-									<option value="MAJ_7">Maj 7</option>
-									<option value="SUS_4">Sus 4</option>
-								</select>
-							</td>
-						</tr>
-						<!-- Classic note (v74): visible only while Classic mode is active;
-						     the single note classic playback perpetuates (random octave). -->
-						<tr id="classicNoteRow">
-							<td class="label">Note:&nbsp;</td>
-							<td>
-								<select id="classicNoteSelect">
-									<option value="G" selected="selected">G</option>
-									<option value="G#">G#</option>
-									<option value="A">A</option>
-									<option value="A#">A#</option>
-									<option value="B">B</option>
-									<option value="C">C</option>
-									<option value="C#">C#</option>
-									<option value="D">D</option>
-									<option value="D#">D#</option>
-									<option value="E">E</option>
-									<option value="F">F</option>
-									<option value="F#">F#</option>
-								</select>
-							</td>
-						</tr>
-					</table>
-					<br />
 					<table class="mixTable">
 						<tr>
 							<td colspan="2" class="instrumentControl">
@@ -286,31 +228,14 @@
 						</tr>
 					</table>
 					<br />
-					<table>
-						<tr>
-							<td class="label">Chime Frequency:&nbsp;</td>
-							<td>
-								<select id="totalSoundsSelect">
-									<option value="1">1</option>
-									<option value="2">2</option>
-									<option value="3">3</option>
-									<option value="4">4</option>
-									<option value="5" selected="selected">5</option>
-								</select>
-							</td>
-						</tr>
-					</table>
-					<br />
-					<div class="label centered">
-						<label>Speed: <select id="speedSelect"><option value="normal">Normal</option><option value="slow">Slow</option><option value="mixed" selected="selected">Mixed</option></select></label>
-					</div>
-					<br />
-					<div class="label centered">
-						<label>Direction: <select id="directionSelect"><option value="forward">Forward</option><option value="reversed">Reversed</option><option value="mixed" selected="selected">Mixed</option></select></label>
-					</div>
-					<br />
-					<div class="label centered">
-						<label>Instrument Delay: <input type="checkbox" id="delayCheck" class="bigCheck" autocomplete="off" checked /></label>
+					<div class="optionRows">
+						<div class="label centered"><label>Mode: <select id="modeSelect"><option value="chord" selected="selected">Chord</option><option value="classic">Classic</option></select></label></div>
+						<div class="label centered" id="chordToneRow"><label>Chord Tone: <select id="chordToneSelect"><option value="RANDOM" selected="selected">Random</option><option value="MAJOR">Major</option><option value="MINOR">Minor</option><option value="DOM_7">Dom 7</option><option value="MAJ_7">Maj 7</option><option value="SUS_4">Sus 4</option></select></label></div>
+						<div class="label centered" id="classicNoteRow"><label>Note: <select id="classicNoteSelect"><option value="G" selected="selected">G</option><option value="G#">G#</option><option value="A">A</option><option value="A#">A#</option><option value="B">B</option><option value="C">C</option><option value="C#">C#</option><option value="D">D</option><option value="D#">D#</option><option value="E">E</option><option value="F">F</option><option value="F#">F#</option></select></label></div>
+						<div class="label centered"><label>Chime Frequency: <select id="totalSoundsSelect"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5" selected="selected">5</option></select></label></div>
+						<div class="label centered"><label>Speed: <select id="speedSelect"><option value="normal">Normal</option><option value="slow">Slow</option><option value="mixed" selected="selected">Mixed</option></select></label></div>
+						<div class="label centered"><label>Direction: <select id="directionSelect"><option value="forward">Forward</option><option value="reversed">Reversed</option><option value="mixed" selected="selected">Mixed</option></select></label></div>
+						<div class="label centered"><label>Instrument Delay: <input type="checkbox" id="delayCheck" class="bigCheck" autocomplete="off" checked /></label></div>
 					</div>
 					<br />
 					<!-- Memory (v117): six permanent PRESETS + four profile slots.

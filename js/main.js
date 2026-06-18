@@ -641,6 +641,7 @@
 	// audible) — DynamicsCompressorNode is core Web Audio on every target, so
 	// this is belt-and-braces only.
 	var compressorNode = null;
+	var appMuteGain = null;          // final master mute: 0 while stopped, 1 while playing (setAppMute)
 	var masterBusTried = false;
 	function masterBusTarget() {
 		if (!audioCtx) { return null; }
@@ -653,11 +654,28 @@
 				c.ratio.value = LIMITER_RATIO;
 				c.attack.value = LIMITER_ATTACK_S;
 				c.release.value = LIMITER_RELEASE_S;
-				c.connect(audioCtx.destination);
+				// Final master MUTE between the limiter and the destination: the WHOLE
+				// mix (instruments + vinyl + ringing note/echo tails) is silenced while
+				// playback is stopped and unmuted while running. The ghost keep-alive
+				// element is NOT routed through here, so it still holds the media session.
+				appMuteGain = audioCtx.createGain();
+				appMuteGain.gain.value = audioEnabled ? 1 : 0;
+				c.connect(appMuteGain);
+				appMuteGain.connect(audioCtx.destination);
 				compressorNode = c;
-			} catch (e) { compressorNode = null; }
+			} catch (e) { compressorNode = null; appMuteGain = null; }
 		}
 		return compressorNode || audioCtx.destination;
+	}
+	// Master mute follows playback: muted (0) while stopped, unmuted (1) while
+	// running. A short ramp avoids a click when cutting the tails on Stop.
+	function setAppMute(muted) {
+		if (!appMuteGain || !audioCtx) { return; }
+		var now = audioCtx.currentTime;
+		var g = appMuteGain.gain;
+		g.cancelScheduledValues(now);
+		g.setValueAtTime(g.value, now);
+		g.linearRampToValueAtTime(muted ? 0 : 1, now + 0.03);
 	}
 
 	// Delay (user 2026-06-14): an optional 3-tap echo on the INSTRUMENT tracks (not
@@ -1057,6 +1075,7 @@
 		qs("#startButton").disabled = false;
 		qs("#sleepButton").disabled = false;
 		audioEnabled = false;
+		setAppMute(true);              // master mute: silence the whole mix at once (cuts the ringing note/echo tails)
 		setSoundPlayerArray(0);
 		clearChordTimers();            // a pending chord-state end or gap end must not fire after Stop
 		currentChordPc = null;         // next Start draws a fresh chord
@@ -1084,6 +1103,7 @@
 		if (ghost) { ghost._pauseHist = []; }
 		vinyl._pauseHist = [];
 		setupPanning();   // user gesture: route the vinyl bed / resume the ctx
+		setAppMute(false);   // running: unmute the master output
 		if (currentMode() === "chord") {
 			// Always a fresh start (the guard above bars re-entry, and Stop
 			// cleared any chord timers) — begin a new progression.
@@ -2536,6 +2556,7 @@
 		get samplesFailed() { return samplesFailed; },
 		get masterScale() { return masterScale(); },
 		get masterBus() { return !!compressorNode; },                       // limiter created + in the path?
+		get appMuteGain() { return appMuteGain ? appMuteGain.gain.value : null; },   // 0 stopped / 1 running
 		get limiterReduction() { return compressorNode ? compressorNode.reduction : null; },  // live gain reduction, dB (≤0)
 		get noteLog() { return noteLog.slice(); },
 		samplerFor: samplerFor,
