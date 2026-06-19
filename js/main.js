@@ -1098,6 +1098,10 @@
 		qs("#sleepButton").disabled = true;
 		qs("#stopButton").disabled = false;
 		audioEnabled = true;
+		// Fresh audio-focus-yield budget for this play session (see the keep-alive
+		// pause handlers): a user Start should get a clean chance to hold focus.
+		if (ghost) { ghost._pauseHist = []; }
+		vinyl._pauseHist = [];
 		setupPanning();   // user gesture: route the vinyl bed / resume the ctx
 		setAppMute(false);   // running: unmute the master output
 		if (currentMode() === "chord") {
@@ -2196,39 +2200,59 @@
 			if (navigator.audioSession) { navigator.audioSession.type = "playback"; }
 		} catch (e) {}
 
-		// Yield the audio session to other apps (user 2026-06-18: on mobile —
-		// iOS Safari, Android Chrome + Firefox — "it still won't let other audio
-		// take focus"). The keep-alive ghost LOOPS, so it never pauses on its own:
-		// a pause while we're meant to be playing always means the OS handed the
-		// audio session to another app (music/video started) or a system
-		// interruption (a call). The OLD code fought back — it called ghost.play()
-		// 400ms later, which grabbed focus straight back and cut the other app off
-		// after ~1s (the reported bug). Its "yield only after >3 pauses in 8s"
-		// heuristic never fired, because a typical app surrenders once we steal
-		// focus back, so it only ever paused us once. So instead of fighting we
-		// now YIELD (a full Stop). A clean lock screen does NOT pause the looping
-		// ghost — holding it + audioSession="playback" is exactly what keeps
-		// background / lock-screen playback alive — so this triggers only on a real
-		// focus hand-off, not on backgrounding. The short re-check ignores a
-		// sub-second glitch that self-recovers; there is no resumable pause in this
-		// app, so the user presses Start to resume.
-		function yieldOnInterruption(el, stillInterrupted) {
-			if (!audioEnabled) { return; }
-			setTimeout(function () {
-				if (audioEnabled && el.paused && stillInterrupted()) { stopAudio(); }
-			}, 250);
+		// Distinguish a genuine audio-focus hand-off (the user started another
+		// app/tab and it took over) from a background suspension we are meant to
+		// survive (user 2026-06-14). A suspension pauses our keep-alive elements
+		// ONCE and our resume holds; another app holding focus re-pauses us every
+		// time we grab it back — a rapid pause→resume oscillation. So if an element
+		// is paused more than FOCUS_YIELD_MAX times within FOCUS_YIELD_WINDOW_MS
+		// (despite our resumes), conclude another app wants the audio and YIELD
+		// completely (a full Stop) instead of fighting. A lone suspension stays
+		// well under the threshold and still auto-resumes as before. startAudio
+		// clears the per-element history, so each user Start gets a fresh budget.
+		var FOCUS_YIELD_WINDOW_MS = 8000;
+		var FOCUS_YIELD_MAX = 3;
+		function shouldYieldAudioFocus(el) {
+			var now = Date.now();
+			var hist = el._pauseHist || (el._pauseHist = []);
+			hist.push(now);
+			while (hist.length && now - hist[0] > FOCUS_YIELD_WINDOW_MS) { hist.shift(); }
+			return hist.length > FOCUS_YIELD_MAX;
 		}
 
+		// Same transient-interruption recovery as the vinyl bed below: if the
+		// OS pauses the ghost while we're meant to be playing, resume it (a
+		// user Stop sets audioEnabled=false first, so it never fights Stop) —
+		// UNLESS the pauses are oscillating, which means another app genuinely
+		// wants the audio, so we yield instead (shouldYieldAudioFocus).
 		ghost.addEventListener("pause", function () {
-			yieldOnInterruption(ghost, function () { return true; });
+			if (audioEnabled) {
+				if (shouldYieldAudioFocus(ghost)) { stopAudio(); return; }
+				setTimeout(function () {
+					if (audioEnabled && ghost.paused) {
+						ghost.play().catch(function () {});
+					}
+				}, 400);
+			}
 		});
 
-		// Same yield for the vinyl bed, but ONLY for a spurious pause: a deliberate
-		// silence-pause (vinyl 0 / master 0) is expected (setVinylVolume pauses the
-		// bed itself) and must be ignored, so gate on vinylAudible() now and at the
-		// re-check — a user dragging vinyl to 0 mid-grace must not read as a steal.
+		// Indefinite playback: a regular Start runs forever (no timer) until the user
+		// hits Stop, starts the sleep timer, or closes the app. If a transient
+		// interruption pauses the vinyl "bed" while we're meant to be playing, resume
+		// it. A user Stop / sleep-end sets audioEnabled=false first, so it won't
+		// resume; the 400ms debounce also lets a deliberate lock-screen pause win.
 		vinyl.addEventListener("pause", function () {
-			if (vinylAudible()) { yieldOnInterruption(vinyl, vinylAudible); }
+			// Only fight a SPURIOUS pause (OS background / focus steal) — a deliberate
+			// silence-pause (vinyl 0 / master 0) must stay paused and must not
+			// count toward the focus-yield, so gate the whole recovery on vinylAudible().
+			if (audioEnabled && vinylAudible()) {
+				if (shouldYieldAudioFocus(vinyl)) { stopAudio(); return; }
+				setTimeout(function () {
+					if (audioEnabled && vinylAudible() && vinyl.paused) {
+						vinyl.play().catch(function () {});
+					}
+				}, 400);
+			}
 		});
 
 		setupMediaSession();
