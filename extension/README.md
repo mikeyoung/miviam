@@ -65,6 +65,7 @@ The trade-off: clicking the button twice opens two tabs. Per-tab de-duplication
 (focus the existing tab) is a future polish that would cost the `tabs` permission.
 
 ## Version
-The extension `version` is independent of the web app's display version. v1 bundles
-the **v2.20**-era app. Bump the manifest `version` (both files) when you ship a new
-extension release.
+The extension `version` **mirrors the app's display version** — same `[major].[minor]`
+format with the minor as a plain integer (2.9 → 2.10, NOT semver). When packaging a
+release, set the manifest `version` in BOTH files to the app's current version (currently
+**2.35**).
