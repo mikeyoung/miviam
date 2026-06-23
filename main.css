@@ -567,8 +567,11 @@ input[type="checkbox"].bigCheck {
 
 #installLocallyHint {
 	/* Always-visible PWA description above the button (user 2026-06-11 —
-	   it was a hidden fallback before the copy rewrite). */
-	margin-bottom:8px;
+	   it was a hidden fallback before the copy rewrite). Centered 300px
+	   container (user 2026-06-19). */
+	max-width:300px;
+	margin:0 auto 8px;
+	text-align:center;
 }
 
 /* ---- installed confirmation: a centred card over a dim backdrop ----
@@ -591,7 +594,7 @@ input[type="checkbox"].bigCheck {
 #installedModalCard {
 	box-sizing:border-box;
 	width:100%;
-	max-width:340px;
+	max-width:300px;            /* match the install hint width (user 2026-06-19) */
 	background-color:#1a2c4e;           /* the app's dark-blue theme */
 	color:#ffffff;
 	text-align:center;
