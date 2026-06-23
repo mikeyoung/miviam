@@ -250,7 +250,7 @@ input[type="button"]:active:not(:disabled),
 	max-width:500px;
 	width:100%;
 	margin:0 auto;
-	text-align:left;         /* bottom text reads left-aligned (user 2026-06-11) */
+	text-align:center;       /* bottom text centred (user 2026-06-19; was left-aligned since 2026-06-11) */
 }
 
 #titleImage {
