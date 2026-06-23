@@ -21,22 +21,25 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 **Sound engine**
 - **Eight vintage instruments** — Höfner bass, cello, Fender Rhodes, vibes, celeste, Mellotron MkII flute, violins, and choir — each sampled across 12 root notes and pitch‑shifted in real time.
 - **Vinyl bed** — a continuous lo‑fi LP surface‑noise layer for warmth and texture, with its own level.
-- **Per‑instrument mixing** — volume, stereo **balance**, and **pan width** for every channel (set a channel's volume to zero to drop it from the rotation).
-- **Master volume** and **chime frequency** (how densely notes fall).
+- **Per‑instrument mixing** — volume, stereo **balance**, and **pan width** for every channel (set a channel's volume to zero to drop it from the rotation — and free its memory until you bring it back).
+- **Master volume** (a rotary dial — drag, scroll, or use the arrow keys) and **chime frequency** (how densely notes fall).
+- **Master limiter** — a gentle limiter rides the whole mix so stacked notes never clip.
 
 **Generative playback**
-- **Two modes** — **Chord** (the default): a slowly evolving chord wheel that holds one chord for a few minutes, falls briefly silent, then moves to a new random chord; and **Classic**: the original single‑note ambient texture.
+- **Two modes** — **Chord** (the default): a slowly evolving chord wheel that holds one chord for a few minutes, falls briefly silent, then moves to a new random chord; and **Classic**: the original single‑note ambient texture, with your choice of root note (default G).
 - **Chord Tone** — **Random** (default), Major, Minor, Dom 7, Maj 7, or Sus 4. Random picks a fresh quality for each new chord.
 - **Speed** — Normal, Slow, or Mixed (per‑note).
 - **Direction** — Forward, Reversed, or Mixed (per‑note reversed playback).
-- **Delay** — a gentle multi‑tap echo on the instruments, on by default.
+- **Delay** — a gentle 3‑tap echo on the instruments (not the vinyl), on by default.
 
 **Comfort & convenience**
-- **Sleep timer** — stops playback after up to 60 minutes, with the countdown shown on the button.
+- **Sleep timer** — stops playback after 60 minutes, with the countdown shown on the button.
+- **Background & lock‑screen playback** — keeps playing when you switch apps or lock the screen, with lock‑screen and hardware media controls. There's no resumable pause: pause and stop both stop fully, so just press **Start** again to resume.
+- **Polite about audio focus** — when another app starts playing, MiViAm steps aside and stops rather than fighting for the speakers.
 - **Presets** — six one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, **Chamber**, and **Drifter**.
 - **Memory slots** — four user slots to **Store** / **Recall** your own mixes (rename them; press‑and‑hold a slot to clear it).
 - **Shareable patches** — the complete state of every control is encoded in the page URL (`#patch=…`), so you can **share a sound just by copying the link**.
-- **Installable & offline** — a Progressive Web App: install it to your home screen or desktop and it runs without a network connection.
+- **Installable & offline** — a Progressive Web App: use the in‑app **Install Locally** button (or your browser's install / Add‑to‑Home‑Screen), and it runs without a network connection.
 - **Remembers your settings** between visits (stored locally in your browser).
 
 ---
@@ -44,13 +47,14 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 ## Using the app
 
 1. Open the [live app](https://mikeyoung.org/miviam/) and press **Start**.
-2. Open **Options & Info** to shape the sound — adjust instrument levels, pick a mode and chord tone, tweak speed/direction/delay, or load a preset.
-3. Press **Sleep** to start the timer (or stop playback).
-4. Found a mix you love? **Copy the URL** to share it, or **Store** it to a memory slot.
+2. Open **Options & Info** to shape the sound — adjust instrument levels and the **Main Volume** dial (drag up/down, scroll, or use the arrow keys), pick a mode and chord tone, tweak speed/direction/delay, or load a preset.
+3. Press **Sleep** to start the 60‑minute timer (or **Stop** to stop playback).
+4. On a phone, lock the screen or switch apps and it keeps playing — use your lock‑screen controls to stop. (Pause stops fully; tap **Start** to resume.)
+5. Found a mix you love? **Copy the URL** to share it, or **Store** it to a memory slot.
 
 ### Installing (PWA)
 
-In a supporting browser, visit the live site and choose **Install** (desktop) or **Add to Home Screen** (mobile). After the first load it works fully offline.
+In a supporting browser, use **Install Locally** in Options & Info — or your browser's **Install** (desktop) / **Add to Home Screen** (mobile). After the first load it works fully offline.
 
 ---
 
@@ -72,7 +76,8 @@ npx serve
 ## Tech stack
 
 - **Vanilla JavaScript** — no framework, no jQuery, **no build step**. Settings are kept in sync with the controls by hand; at this scale that's simpler than adding React/Vue and a toolchain (and it keeps the dependency and security surface tiny).
-- **Web Audio API** — a buffer‑based sampler: each note is an `AudioBufferSourceNode` pitch‑shifted via `playbackRate`, routed through per‑note gain/pan into a shared instrument bus, a multi‑tap delay, and a master limiter.
+- **Web Audio API** — a buffer‑based sampler: each note is an `AudioBufferSourceNode` pitch‑shifted via `playbackRate`, routed through per‑note gain/pan into a shared instrument bus, a multi‑tap delay, and a master limiter. Samples load **lazily** — each instrument's 12 notes are fetched and decoded only when it's audible and evicted at volume 0 (with retry/backoff), so memory tracks just the instruments you're hearing.
+- **Media Session API + silent keep‑alive** — registers lock‑screen metadata and transport controls, and a silent looping element keeps the OS media session alive so playback survives backgrounding and iOS lock‑screen Web Audio suspension; it yields focus (stops) on interruption.
 - **Service Worker + Web App Manifest** — offline app‑shell precaching plus a runtime audio cache; installable as a PWA.
 - **`localStorage`** — persists your last settings.
 - **Responsive by proportion** — the layout centers and scales to the viewport (no CSS breakpoints or Bootstrap).
