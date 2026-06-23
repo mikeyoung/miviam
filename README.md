@@ -4,6 +4,8 @@
 
 # MiViAm — Mike's Vintage Ambient
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 **Soothing ambient sound chimes with a sleep timer.** An endless, non‑repeating stream of relaxing vintage‑instrument notes drifting over a bed of warm vinyl‑record surface noise.
 
 🔊 **Live app:** https://mikeyoung.org/miviam/
@@ -101,6 +103,12 @@ Built and tested for **Firefox and Chrome** (and other Chromium browsers) across
 The Mellotron sounds were sourced from the **GForce Mellotron VSTi** — they did an incredible job with that instrument and deserve much of the credit for how lovely the tones are. The electric piano is a **Fender Rhodes** and the bass is a **Höfner**.
 
 Each sample was EQ'd to favour the midrange and compressed so the instruments share a similar frequency band. The Mellotron already has much of its high and low end rolled off — likely a limitation of the original hardware rather than a design choice. **If you add your own sounds**, note that you may want to replace the defaults entirely for a broader dynamic range, or compress new sounds to match this style. Also note that the chime‑rate scheduling assumes samples stay under a certain length.
+
+---
+
+## License
+
+Released under the **MIT License** — see [LICENSE](LICENSE) for the full text. Use it, fork it, ship it.
 
 ---
 
