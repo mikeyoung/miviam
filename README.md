@@ -7,7 +7,6 @@
 **Soothing ambient sound chimes with a sleep timer.** An endless, non‑repeating stream of relaxing vintage‑instrument notes drifting over a bed of warm vinyl‑record surface noise.
 
 🔊 **Live app:** https://mikeyoung.org/miviam/
-🎬 **Early video demo:** https://youtu.be/mNCxTsWdmJI _(shows an earlier version; the app has grown a lot since)_
 
 MiViAm is a browser‑based reimagining of the classic (and no longer available) iOS and Chrome "MiViAm" apps. It runs in any modern browser, installs as an offline app, and is deliberately light on network and local resources. Because every sequence is generated on the fly and never repeats, there's no pattern to lock onto and tire of — it's meant to fade into the background.
 
