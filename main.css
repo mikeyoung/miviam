@@ -247,10 +247,17 @@ input[type="button"]:active:not(:disabled),
 	font-size:16px;          /* desktop/tablet size; phones scale up in the <=600px tier (user 2026-06-10) */
 	font-weight:normal;
 	color:#ffffff;
-	max-width:500px;
+	max-width:300px;
 	width:100%;
 	margin:0 auto;
 	text-align:center;       /* bottom text centred (user 2026-06-19; was left-aligned since 2026-06-11) */
+}
+
+/* Links in the bottom notes match the surrounding text size (user 2026-06-19);
+   the global `a` rule renders links smaller, which looked off in the copy.
+   Higher specificity than the `a` font-size rules, so it wins at every tier. */
+.notes a {
+	font-size:inherit;
 }
 
 #titleImage {
