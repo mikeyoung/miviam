@@ -8,6 +8,8 @@
 
 🔊 **Live app:** https://mikeyoung.org/miviam/
 
+🧩 **Browser extension:** [Chrome Web Store](https://chromewebstore.google.com/detail/miviam-mikes-vintage-ambi/fhljkeikicpbgoclmilpidfjgkfhpgfb) · [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/miviam-mike-s-vintage-ambient/)
+
 MiViAm is a browser‑based reimagining of the classic (and no longer available) iOS and Chrome "MiViAm" apps. It runs in any modern browser, installs as an offline app, and is deliberately light on network and local resources. Because every sequence is generated on the fly and never repeats, there's no pattern to lock onto and tire of — it's meant to fade into the background.
 
 ---
@@ -17,7 +19,7 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 **Sound engine**
 - **Eight vintage instruments** — Höfner bass, cello, Fender Rhodes, vibes, celeste, Mellotron MkII flute, violins, and choir — each sampled across 12 root notes and pitch‑shifted in real time.
 - **Vinyl bed** — a continuous lo‑fi LP surface‑noise layer for warmth and texture, with its own level.
-- **Per‑instrument mixing** — volume, stereo **balance**, and **pan width** for every channel, plus **Mute/Unmute** and **Solo**.
+- **Per‑instrument mixing** — volume, stereo **balance**, and **pan width** for every channel (set a channel's volume to zero to drop it from the rotation).
 - **Master volume** and **chime frequency** (how densely notes fall).
 
 **Generative playback**
@@ -28,8 +30,8 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 - **Delay** — a gentle multi‑tap echo on the instruments, on by default.
 
 **Comfort & convenience**
-- **Sleep timer** — fades everything out after up to 60 minutes.
-- **Presets** — five one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, and **Chamber**.
+- **Sleep timer** — stops playback after up to 60 minutes, with the countdown shown on the button.
+- **Presets** — six one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, **Chamber**, and **Drifter**.
 - **Memory slots** — four user slots to **Store** / **Recall** your own mixes (rename them; press‑and‑hold a slot to clear it).
 - **Shareable patches** — the complete state of every control is encoded in the page URL (`#patch=…`), so you can **share a sound just by copying the link**.
 - **Installable & offline** — a Progressive Web App: install it to your home screen or desktop and it runs without a network connection.
@@ -40,7 +42,7 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 ## Using the app
 
 1. Open the [live app](https://mikeyoung.org/miviam/) and press **Start**.
-2. Open **Settings** to shape the sound — adjust instrument levels, pick a mode and chord tone, tweak speed/direction/delay, or load a preset.
+2. Open **Options & Info** to shape the sound — adjust instrument levels, pick a mode and chord tone, tweak speed/direction/delay, or load a preset.
 3. Press **Sleep** to start the timer (or stop playback).
 4. Found a mix you love? **Copy the URL** to share it, or **Store** it to a memory slot.
 
