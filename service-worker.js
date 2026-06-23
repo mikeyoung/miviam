@@ -1,7 +1,7 @@
 /* MiViAm service worker — offline app shell + runtime audio cache.
  * Plain vanilla SW, no build step. See project_tracking/pwa_conversion_plan.md.
  */
-var SHELL_CACHE = "miviam-shell-v152";
+var SHELL_CACHE = "miviam-shell-v153";
 var AUDIO_CACHE = "miviam-audio-v7";   // v7: Celeste samples re-recorded in place (incl. the
                                        // E4 filename fix) - same URLs, new bytes. Cache-first, so only a purge (a
                                        // fresh cache name) delivers the new bytes to already-cached clients.
