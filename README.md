@@ -36,7 +36,7 @@ MiViAm is a browser‑based reimagining of the classic (and no longer available)
 - **Sleep timer** — stops playback after 60 minutes, with the countdown shown on the button.
 - **Background & lock‑screen playback** — keeps playing when you switch apps or lock the screen, with lock‑screen and hardware media controls. There's no resumable pause: pause and stop both stop fully, so just press **Start** again to resume.
 - **Polite about audio focus** — when another app starts playing, MiViAm steps aside and stops rather than fighting for the speakers.
-- **Presets** — six one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, **Chamber**, and **Drifter**.
+- **Presets** — eight one‑tap factory mixes: **Default**, **Space Opera**, **Classic**, **Celestial**, **Chamber**, **Drifter**, **All Bass**, and **Flutes**.
 - **Memory slots** — four user slots to **Store** / **Recall** your own mixes (rename them; press‑and‑hold a slot to clear it).
 - **Shareable patches** — the complete state of every control is encoded in the page URL (`#patch=…`), so you can **share a sound just by copying the link**.
 - **Installable & offline** — a Progressive Web App: use the in‑app **Install Locally** button (or your browser's install / Add‑to‑Home‑Screen), and it runs without a network connection.

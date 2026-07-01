@@ -202,11 +202,11 @@ input[type="button"]:active:not(:disabled),
 }
 
 /* Preset buttons (Default / Space Opera / Classic / Celestial / Chamber /
-   Drifter): a 2-column grid — 3 rows of 2 — with gap spacing between each
-   button (user 2026-06-15). These are <button> elements (not <input>) so
-   "Space Opera" can hard-break onto two lines via <br>. grid-auto-rows:1fr
-   makes every row the same (taller) height as the tallest, so all six match
-   regardless of one- vs two-line labels (user 2026-06-15: taller buttons). */
+   Drifter / All Bass / Flutes): a 2-column grid — 4 rows of 2 — with gap
+   spacing between each button (user 2026-06-15). These are <button> elements
+   (not <input>) so "Space Opera" can hard-break onto two lines via <br>.
+   grid-auto-rows:1fr makes every row the same (taller) height as the tallest,
+   so all eight match regardless of one- vs two-line labels. */
 .presetGrid {
 	display:grid;
 	grid-template-columns:1fr 1fr;

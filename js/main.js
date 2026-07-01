@@ -1467,7 +1467,7 @@
 		updateChordToneVisibility();
 	}
 
-	/* ---------- Memory: five permanent presets + four profile slots ---------- */
+	/* ---------- Memory: eight permanent presets + four profile slots ---------- */
 	// (user 2026-06-12) A profile holds the WHOLE mix except the main volume
 	// (excluded by default — recalling a mix shouldn't change your output level;
 	// the "Default" preset and a shared URL patch are the exceptions, carrying
@@ -1475,8 +1475,9 @@
 	// balance / width (muted = volume 0), the vinyl volume, the chime frequency,
 	// the mode and both mode fields (chord tone + classic note — both stored so
 	// either mode recalls intact). The PRESET buttons (Default / Space Opera /
-	// Classic / Celestial / Chamber / Drifter — their names are their button labels) recall
-	// factory mixes 9/1/2/7/8/10 directly: no Store, no title, nothing to clear.
+	// Classic / Celestial / Chamber / Drifter / All Bass / Flutes — their names are
+	// their button labels) recall factory mixes 9/1/2/7/8/10/11/12 directly: no
+	// Store, no title, nothing to clear.
 	// "Default" (9) is the app's fresh-load defaults and replaced the old "Reset
 	// to default" button (user 2026-06-14). The SLOTS (3..6) each have Store N /
 	// Recall N; Store asks for confirmation through the system dialog first. Slots
@@ -1494,9 +1495,9 @@
 	}
 
 
-	// Factory contents: 1/2/7/8/9/10 are the permanent presets' mixes (Space Opera /
-	// Classic / Celestial / Chamber / Default / Drifter); slots 3..6 fall through to the base
-	// (empty-state fallback).
+	// Factory contents: 1/2/7/8/9/10/11/12 are the permanent presets' mixes (Space
+	// Opera / Classic / Celestial / Chamber / Default / Drifter / All Bass / Flutes);
+	// slots 3..6 fall through to the base (empty-state fallback).
 	// Built from the same constants as Reset so "default" can never drift
 	// from the app's own. The user's values are display-scale — a Balance
 	// of 0 is slider 51 (BALANCE_DEFAULT), which the base already applies
@@ -1585,6 +1586,36 @@
 			p.direction = "forward";
 			p.delay = false;
 			p.vinylVol = "20";
+		} else if (n === 11) {
+			// "All Bass" (user 2026-06-23): Celestial's recipe with the bass in the
+			// celeste's chair — bass alone, chord mode (Major). Vol 75, chimes 5,
+			// balance centred (display 0), width 50, Delay on, Forward, Normal.
+			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
+			p.bassVol = "75";
+			p.bassBalance = BALANCE_DEFAULT;   // display 0 (centre)
+			p.bassPanWidth = "50";
+			p.mode = "chord";
+			p.chordTone = "MAJOR";
+			p.totalSoundsSelect = "5";
+			p.vinylVol = "20";
+			p.delay = true;
+			p.direction = "forward";
+			p.speed = "normal";
+		} else if (n === 12) {
+			// "Flutes" (user 2026-06-23): Celestial's recipe with the flute in the
+			// celeste's chair — flute alone, chord mode (Major). Vol 75, chimes 5,
+			// balance centred (display 0), width 50, Delay on, Forward, Normal.
+			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
+			p.fluteVol = "75";
+			p.fluteBalance = BALANCE_DEFAULT;   // display 0 (centre)
+			p.flutePanWidth = "50";
+			p.mode = "chord";
+			p.chordTone = "MAJOR";
+			p.totalSoundsSelect = "5";
+			p.vinylVol = "20";
+			p.delay = true;
+			p.direction = "forward";
+			p.speed = "normal";
 		}
 		// Slots (3..6): the base — every value at the app's own default.
 		return p;
@@ -1877,10 +1908,11 @@
 		// The permanent presets, in button order: Default (9, = the fresh-load
 		// defaults, replacing the old "Reset to default"), Space Opera (1), Classic
 		// (2), Celestial (7), Chamber (8), Drifter (10, a copy of Default —
-		// user 2026-06-15). Plain recalls of the factory mixes — no Store/title.
+		// user 2026-06-15), All Bass (11) and Flutes (12, both Celestial variants —
+		// user 2026-06-23). Plain recalls of the factory mixes — no Store/title.
 		// (The 1968 preset was retired 2026-06-14; its Mixed/Mixed/chimes-7/Delay-on
 		// settings are now the app defaults.)
-		[9, 1, 2, 7, 8, 10].forEach(function (n) {
+		[9, 1, 2, 7, 8, 10, 11, 12].forEach(function (n) {
 			qs("#memPreset" + n).addEventListener("click", function () {
 				applyMemoryProfile(defaultMemoryProfile(n));
 			});
