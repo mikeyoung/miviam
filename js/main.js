@@ -1588,10 +1588,9 @@
 			p.vinylVol = "20";
 		} else if (n === 11) {
 			// "All Bass" (user 2026-06-23): Celestial's recipe with the bass in the
-			// celeste's chair — bass alone, chord mode (Major). Vol 75, chimes 3
-			// (user 2026-06-23: was 5), balance centred (display 0), width 0
-			// (user 2026-06-23: was 50 — the bass sits dead centre), Delay on,
-			// Forward, Normal.
+			// celeste's chair — bass alone, chord mode (Major). Vol 75, chimes 3,
+			// balance centred (display 0), width 0 (bass sits dead centre), vinyl 5
+			// and NO Delay (user 2026-06-23: was vinyl 20 + Delay on), Forward, Normal.
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.bassVol = "75";
 			p.bassBalance = BALANCE_DEFAULT;   // display 0 (centre)
@@ -1599,8 +1598,8 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "3";
-			p.vinylVol = "20";
-			p.delay = true;
+			p.vinylVol = "5";
+			p.delay = false;
 			p.direction = "forward";
 			p.speed = "normal";
 		} else if (n === 12) {
