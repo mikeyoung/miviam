@@ -1543,8 +1543,8 @@
 			p.direction = "forward";
 			p.delay = false;
 		} else if (n === 7) {
-			// "Celestial" (user 2026-06-14): celeste alone, chord mode (Major). Vol 75,
-			// chimes 5, balance centred (display 0), width 50, Delay on, Forward, Normal.
+			// "Celestial": celeste alone, chord mode (Major). Vol 75, chimes 5,
+			// balance centred (display 0), width 50, vinyl 5, no Delay, Forward, Mixed.
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.celesteVol = "75";
 			p.celesteBalance = BALANCE_DEFAULT;   // display 0 (centre)
@@ -1552,10 +1552,10 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "5";
-			p.vinylVol = "20";
-			p.delay = true;
+			p.vinylVol = "5";
+			p.delay = false;
 			p.direction = "forward";
-			p.speed = "normal";
+			p.speed = "mixed";
 		} else if (n === 8) {
 			// "Chamber" (user 2026-06-14): cello + flute only, chord mode (Random), no
 			// Delay. Cello 100, flute 70, balance centred (display 0), width 20, chimes 4,
