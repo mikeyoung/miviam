@@ -275,6 +275,9 @@
 	var sampleRetries = 0;   // retry attempts so far (debug — _miviam)
 	var samplesFailed = 0;   // jobs given up after all retries (debug)
 	var pendingLoads = {};   // key -> true while a fetch+decode is in flight (dedupe)
+	var SAMPLE_LOAD_CONCURRENCY = 4;
+	var sampleLoadQueue = [];
+	var sampleLoadsActive = 0;
 
 	// Lazy decoding + evict-on-disable (user 2026-06-14): samples are NO LONGER
 	// all decoded up front. Each instrument's 12 samples are fetched + decoded the
@@ -315,6 +318,13 @@
 				delete pendingLoads[key];
 			})
 			.catch(function () {
+				// An instrument disabled while this job was running no longer
+				// needs retries. The queue will start a fresh job if it is
+				// enabled again later.
+				if (!instrumentActive(prefix)) {
+					delete pendingLoads[key];
+					return;
+				}
 				if (attempt > SAMPLE_RETRY_MAX) {
 					samplesFailed++;
 					delete pendingLoads[key];   // a later reconcile re-attempts it
@@ -325,6 +335,42 @@
 				return new Promise(function (resolve) { setTimeout(resolve, delay); })
 					.then(function () { return loadSample(url, key, prefix, attempt + 1); });
 			});
+	}
+
+	// Fetch + decode at most four samples at once. A preset can enable all eight
+	// instruments together (96 files); starting every decode concurrently creates
+	// a large transient PCM/decoder allocation spike and has historically exhausted
+	// browser decoder resources. A small queue preserves lazy loading while keeping
+	// both encoded and decoded in-flight memory bounded.
+	function startSampleLoadJob(job) {
+		sampleLoadsActive++;
+		function finish() {
+			sampleLoadsActive--;
+			pumpSampleLoadQueue();
+		}
+		try {
+			loadSample(job.url, job.key, job.prefix, 1).then(finish, finish);
+		} catch (e) {
+			delete pendingLoads[job.key];
+			finish();
+		}
+	}
+
+	function pumpSampleLoadQueue() {
+		while (sampleLoadsActive < SAMPLE_LOAD_CONCURRENCY && sampleLoadQueue.length) {
+			var job = sampleLoadQueue.shift();
+			if (!pendingLoads[job.key]) { continue; }   // cancelled while queued
+			if (!instrumentActive(job.prefix)) {
+				delete pendingLoads[job.key];
+				continue;
+			}
+			startSampleLoadJob(job);
+		}
+	}
+
+	function queueSampleLoad(url, key, prefix) {
+		sampleLoadQueue.push({ url: url, key: key, prefix: prefix });
+		pumpSampleLoadQueue();
 	}
 
 	// Ensure all 12 of an instrument's samples are decoded (or in flight). A no-op
@@ -338,7 +384,7 @@
 			var key = prefix + ":" + root.note;
 			if (sampleBuffers[key] || pendingLoads[key]) { return; }
 			pendingLoads[key] = true;
-			loadSample(urlForRoot(instr, root), key, prefix, 1);
+			queueSampleLoad(urlForRoot(instr, root), key, prefix);
 		});
 	}
 
@@ -349,6 +395,14 @@
 		ROOT_NOTES.forEach(function (root) {
 			var key = prefix + ":" + root.note;
 			if (sampleBuffers[key]) { delete sampleBuffers[key]; }
+			dropReversedBuffer(key);
+		});
+		// Remove work that has not started. At most four active jobs remain; each
+		// discards its result when it lands because the instrument is inactive.
+		sampleLoadQueue = sampleLoadQueue.filter(function (job) {
+			if (job.prefix !== prefix) { return true; }
+			delete pendingLoads[job.key];
+			return false;
 		});
 	}
 
@@ -901,16 +955,36 @@
 
 	// Reversed buffer for the "reversed"/"mixed" Direction. Web Audio cannot play a
 	// buffer backwards via playbackRate, so a note that should be reversed plays
-	// from a reversed COPY of the decoded sample. Built fresh PER NOTE and never
-	// cached (user 2026-06-14): the copy lives only for that note — the source holds
-	// the only reference and it is freed when the note ends — so reversal adds NO
-	// resident memory, it never doubles the ~84 MB library. The flip is a ~215k-
-	// sample loop, well under 1 ms, and audio renders off the main thread, so the
-	// CPU/battery cost is imperceptible. Forward notes never call this. Mono PCM ⇒
-	// the channel loop runs once.
+	// from a reversed COPY of the decoded sample. Cache the 24 most recently used
+	// copies: repeated reversed notes reuse their PCM instead of allocating another
+	// full buffer every time, while the hard cap prevents reversal from doubling the
+	// whole decoded library. Evicting an instrument also drops all of its cached
+	// reverses. A source already playing keeps its own buffer reference if its cache
+	// entry is displaced.
+	var REVERSED_BUFFER_CACHE_MAX = 24;
+	var reversedBuffers = {};
+	var reversedBufferOrder = [];
+
+	function dropReversedBuffer(key) {
+		if (!reversedBuffers[key]) { return; }
+		delete reversedBuffers[key];
+		var index = reversedBufferOrder.indexOf(key);
+		if (index !== -1) { reversedBufferOrder.splice(index, 1); }
+	}
+
+	function touchReversedBuffer(key) {
+		var index = reversedBufferOrder.indexOf(key);
+		if (index !== -1) { reversedBufferOrder.splice(index, 1); }
+		reversedBufferOrder.push(key);
+	}
+
 	function reversedBufferFor(key) {
 		var srcBuf = sampleBuffers[key];
 		if (!srcBuf || !audioCtx) { return null; }
+		if (reversedBuffers[key]) {
+			touchReversedBuffer(key);
+			return reversedBuffers[key];
+		}
 		var rev;
 		try {
 			rev = audioCtx.createBuffer(srcBuf.numberOfChannels, srcBuf.length, srcBuf.sampleRate);
@@ -921,14 +995,56 @@
 			output = rev.getChannelData(ch);
 			for (i = 0; i < n; i++) { output[i] = input[n - 1 - i]; }
 		}
+		reversedBuffers[key] = rev;
+		touchReversedBuffer(key);
+		while (reversedBufferOrder.length > REVERSED_BUFFER_CACHE_MAX) {
+			dropReversedBuffer(reversedBufferOrder[0]);
+		}
 		return rev;
+	}
+
+	// Track the small set of voices that are currently rendering. Every exit path
+	// goes through one idempotent disposer: natural end, Stop, or an exception while
+	// allocating/connecting/starting a note. This prevents a partially connected
+	// graph from surviving when start() never produces an onended event.
+	var activeNotes = [];
+	var notesStarted = 0;
+	var notesDisposed = 0;
+	var noteStartFailures = 0;
+
+	function disposeNoteVoice(voice, stopFirst) {
+		if (!voice || voice.disposed) { return; }
+		voice.disposed = true;
+		if (voice.src) {
+			voice.src.onended = null;
+			if (stopFirst) {
+				try { voice.src.stop(); } catch (e) {}
+			}
+			try { voice.src.disconnect(); } catch (e2) {}
+			try { voice.src.buffer = null; } catch (e3) {}
+		}
+		if (voice.panner) {
+			try { voice.panner.disconnect(); } catch (e4) {}
+		}
+		if (voice.gain) {
+			try { voice.gain.disconnect(); } catch (e5) {}
+		}
+		var index = activeNotes.indexOf(voice);
+		if (index !== -1) { activeNotes.splice(index, 1); }
+		if (voice.started) { notesDisposed++; }
+	}
+
+	function stopActiveNotes() {
+		activeNotes.slice().forEach(function (voice) {
+			disposeNoteVoice(voice, true);
+		});
 	}
 
 	// Play one note NOW (both modes route through here): buffer source →
 	// StereoPanner (balance + pan width, where available) → gain (the classic
 	// random 0.2–0.8 envelope × instrument volume %) → the shared instrument bus
 	// (delay) → master fader (main volume) → limiter → destination. Each note's
-	// nodes are torn down in src.onended (v129): a
+	// nodes go through disposeNoteVoice on natural end, Stop, or start failure: a
 	// node that stays connected to destination is a GC root, and Firefox
 	// (unlike Chrome/WebKit) never reclaims a finished-but-still-connected
 	// source — so WITHOUT the explicit disconnect the per-note graph piled up
@@ -936,9 +1052,9 @@
 	// without StereoPannerNode plays unpanned, exactly like the element engine.
 	function playNote(instr, note, slow) {
 		if (!audioCtx) { return; }
-		// A source started on a non-running ctx never advances, so its onended
-		// (the ONLY teardown path) never fires and the node strands connected to
-		// destination — the v129 leak shape, re-openable if the OS leaves the ctx
+		// A source started on a non-running ctx never advances, so its onended never
+		// fires and the node remains active until an explicit Stop. Avoid creating
+		// that frozen voice if the OS leaves the ctx
 		// suspended/interrupted mid-session while the timers keep firing. Skip the
 		// note while not running and opportunistically resume so nothing piles up.
 		if (audioCtx.state !== "running") { audioCtx.resume().catch(function () {}); return; }
@@ -947,6 +1063,9 @@
 		var key = instr.prefix + ":" + s.rootNote;
 		var buf = sampleBuffers[key];
 		if (!buf) { ensureInstrumentSamples(instr.prefix); return; }   // not decoded yet — kick off its load + skip this note
+		var volEl = document.getElementById(instr.prefix + "Vol");
+		var vol = volEl ? parseInt(volEl.value, 10) : 0;
+		if (!(vol > 0)) { return; }   // position 0 = instrument off
 		// Direction: forward plays the decoded buffer as-is; reversed/mixed may swap
 		// in the reversed copy (falling back to forward if it couldn't be built).
 		var reversed = noteIsReversed();
@@ -954,45 +1073,38 @@
 			var revBuf = reversedBufferFor(key);
 			if (revBuf) { buf = revBuf; } else { reversed = false; }
 		}
-		var volEl = document.getElementById(instr.prefix + "Vol");
-		var vol = volEl ? parseInt(volEl.value, 10) : 0;
-		if (!(vol > 0)) { return; }   // position 0 = instrument off
 		if (slow === undefined) { slow = noteIsSlow(note, instr.prefix); }   // playSound passes it; default for safety
-		var src = audioCtx.createBufferSource();
-		src.buffer = buf;
-		src.playbackRate.value = s.rate * (slow ? SLOW_RATE : 1);
-		var gain = audioCtx.createGain();
-		// Channel level only (random envelope × instrument volume × flute trim). Master
-		// volume is NOT applied here — it rides masterVolNode, AFTER the delay bus.
-		gain.gain.value = (0.2 + 0.6 * Math.random()) * instrumentScale(vol) * fluteHighGain(instr, note, slow);
-		var panner = null;
-		if (typeof StereoPannerNode !== "undefined" && audioCtx.createStereoPanner) {
-			panner = audioCtx.createStereoPanner();
-			panner.pan.value = panFor(instr.prefix + "Vol");
-			src.connect(panner);
-			panner.connect(gain);
-		} else {
-			src.connect(gain);
+		var voice = { src: null, gain: null, panner: null, disposed: false, started: false };
+		try {
+			voice.src = audioCtx.createBufferSource();
+			voice.src.buffer = buf;
+			voice.src.playbackRate.value = s.rate * (slow ? SLOW_RATE : 1);
+			voice.gain = audioCtx.createGain();
+			// Channel level only (random envelope × instrument volume × flute trim).
+			// Master volume rides masterVolNode, after the delay bus.
+			voice.gain.gain.value = (0.2 + 0.6 * Math.random()) *
+				instrumentScale(vol) * fluteHighGain(instr, note, slow);
+			if (typeof StereoPannerNode !== "undefined" && audioCtx.createStereoPanner) {
+				voice.panner = audioCtx.createStereoPanner();
+				voice.panner.pan.value = panFor(instr.prefix + "Vol");
+				voice.src.connect(voice.panner);
+				voice.panner.connect(voice.gain);
+			} else {
+				voice.src.connect(voice.gain);
+			}
+			var target = instrumentBusTarget();
+			if (!target) { throw new Error("No instrument bus"); }
+			voice.gain.connect(target);
+			voice.src.onended = function () { disposeNoteVoice(voice, false); };
+			activeNotes.push(voice);
+			voice.src.start();
+			voice.started = true;
+			notesStarted++;
+		} catch (e) {
+			noteStartFailures++;
+			disposeNoteVoice(voice, true);
+			return;
 		}
-		gain.connect(instrumentBusTarget());   // shared instrument bus: dry + the 3-tap delay, then the master fader, then the limiter
-		// Release the whole chainlet from the graph the instant the note ends so
-		// it is no longer reachable from destination and can be collected (see
-		// the note above). Natural-end onended fires once on every target while
-		// the ctx is alive (created once, never closed); the null-out breaks the
-		// node→handler cycle and the try/catch makes any stray late fire a no-op.
-		src.onended = function () {
-			src.onended = null;
-			try {
-				src.disconnect();
-				if (panner) { panner.disconnect(); }
-				gain.disconnect();
-				src.buffer = null;   // release the buffer ref the instant the note ends — lets an
-				                     // already-evicted (disabled-instrument) sample be GC'd promptly,
-				                     // not only when the source node itself is collected. Nulling is
-				                     // spec-allowed (the set-once rule blocks only a second NON-null set).
-			} catch (e) {}
-		};
-		src.start();
 		noteLog.push({ t: Math.round(performance.now()), instr: instr.prefix, note: note, rev: reversed });
 		if (noteLog.length > NOTE_LOG_MAX) { noteLog.shift(); }
 		// Light the matching instrument title while the settings panel is open.
@@ -1076,14 +1188,13 @@
 		qs("#sleepButton").disabled = false;
 		audioEnabled = false;
 		setAppMute(true);              // master mute: silence the whole mix at once (cuts the ringing note/echo tails)
+		stopActiveNotes();             // release every in-flight per-note graph immediately
 		setSoundPlayerArray(0);
 		clearChordTimers();            // a pending chord-state end or gap end must not fire after Stop
 		currentChordPc = null;         // next Start draws a fresh chord
 		vinyl.pause();
 		if (ghost) { ghost.pause(); }   // release the audio session (Control Center / audio focus)
 		setPlaybackState("paused");
-		// (Notes in flight are ≤ ~5.2 s and finish on their own — matching the
-		// original engine, which only paused the vinyl loop here.)
 	}
 
 	// Button-state machine (user 2026-06-11): stopped = Start + Sleep
@@ -2580,6 +2691,9 @@
 		get buffersDecoded() { return Object.keys(sampleBuffers).length; },
 		get loadedKeys() { return Object.keys(sampleBuffers).slice().sort(); },   // which samples are currently decoded
 		get pendingLoads() { return Object.keys(pendingLoads).slice().sort(); },
+		get sampleLoadQueue() { return sampleLoadQueue.map(function (job) { return job.key; }); },
+		get sampleLoadsActive() { return sampleLoadsActive; },
+		get sampleLoadConcurrency() { return SAMPLE_LOAD_CONCURRENCY; },
 		reconcileSamples: reconcileSamples,   // force a synchronous reconcile (bypasses the debounce) for tests
 		get maxSampleSeconds() { return maxSampleSeconds; },
 		get gapMs() { return gapMs(); },
@@ -2598,6 +2712,14 @@
 		fluteHighGain: fluteHighGain,
 		get fluteHighFloor() { return FLUTE_HIGH_FLOOR; },
 		get direction() { return currentDirection(); },
+		get reversedBuffers() { return Object.keys(reversedBuffers).length; },
+		get reversedBufferKeys() { return reversedBufferOrder.slice(); },
+		get reversedBufferCacheMax() { return REVERSED_BUFFER_CACHE_MAX; },
+		get activeNotes() { return activeNotes.length; },
+		get notesStarted() { return notesStarted; },
+		get notesDisposed() { return notesDisposed; },
+		get noteStartFailures() { return noteStartFailures; },
+		get contextState() { return audioCtx ? audioCtx.state : null; },
 		get delayOn() { return delayOn(); },
 		get delayBuilt() { return !!instrumentBus; },
 		get masterVolGain() { return masterVolNode ? masterVolNode.gain.value : null; },   // post-delay master fader level (= masterScale once built)
