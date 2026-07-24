@@ -40,6 +40,10 @@ registering it on the `chrome-extension:` / `moz-extension:` origin (a no-op on
 the live https site), and the assets are already packaged. **Re-run the build
 after any web-app change** to refresh the bundle.
 
+The build also creates store-ready `dist/miviam-<browser>-<version>.zip` files,
+with `manifest.json` at the archive root. It validates each new archive before
+replacing the current one, then removes older zip versions for that browser.
+
 ## Load unpacked (for testing)
 - **Chrome / Edge / Brave:** `chrome://extensions` → enable *Developer mode* →
   *Load unpacked* → select `extension/dist/chrome`.
@@ -50,9 +54,9 @@ after any web-app change** to refresh the bundle.
 Click the toolbar icon → MiViAm opens in a new tab → press **Start**.
 
 ## Packaging for the stores
-- **Chrome Web Store:** zip the **contents** of `dist/chrome` (manifest at the zip
-  root) and upload in the Developer Dashboard.
-- **Firefox (AMO):** zip the contents of `dist/firefox` as an `.xpi` and submit at
+- **Chrome Web Store:** upload the generated `dist/miviam-chrome-<version>.zip`
+  in the Developer Dashboard.
+- **Firefox (AMO):** upload the generated `dist/miviam-firefox-<version>.zip` at
   addons.mozilla.org for signing (required to install permanently). The
   `browser_specific_settings.gecko.id` (`miviam@mikeyoung.org`) is the add-on id.
 
