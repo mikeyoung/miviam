@@ -59,6 +59,8 @@ Click the toolbar icon → MiViAm opens in a new tab → press **Start**.
 - **Firefox (AMO):** upload the generated `dist/miviam-firefox-<version>.zip` at
   addons.mozilla.org for signing (required to install permanently). The
   `browser_specific_settings.gecko.id` (`miviam@mikeyoung.org`) is the add-on id.
+  The package targets Firefox 140+ on desktop and Firefox 142+ on Android, the first
+  versions supporting AMO's required `data_collection_permissions` declaration.
 
 Store review + signing is the slow part; the bundle itself needs no code changes.
 

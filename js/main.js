@@ -1218,10 +1218,31 @@
 	// updateVolLabel, keeps the indicator in sync with every programmatic value change.
 	var DIAL_SWEEP_DEG = 270;          // total angular travel (min..max), centred on 12 o'clock
 	var DIAL_DRAG_PX = 180;            // vertical drag (px) that sweeps the full min..max
-	var DIAL_SVG = '<svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">' +
-		'<circle class="dialFace" cx="50" cy="50" r="45"></circle>' +
-		'<line class="dialIndicator" x1="50" y1="30" x2="50" y2="12" transform="rotate(0 50 50)"></line>' +
-		'</svg>';
+	var DIAL_SVG_NS = "http://www.w3.org/2000/svg";
+
+	function buildDialGraphic() {
+		var svg = document.createElementNS(DIAL_SVG_NS, "svg");
+		svg.setAttribute("viewBox", "0 0 100 100");
+		svg.setAttribute("aria-hidden", "true");
+		svg.setAttribute("focusable", "false");
+
+		var face = document.createElementNS(DIAL_SVG_NS, "circle");
+		face.setAttribute("class", "dialFace");
+		face.setAttribute("cx", "50");
+		face.setAttribute("cy", "50");
+		face.setAttribute("r", "45");
+		svg.appendChild(face);
+
+		var indicator = document.createElementNS(DIAL_SVG_NS, "line");
+		indicator.setAttribute("class", "dialIndicator");
+		indicator.setAttribute("x1", "50");
+		indicator.setAttribute("y1", "30");
+		indicator.setAttribute("x2", "50");
+		indicator.setAttribute("y2", "12");
+		indicator.setAttribute("transform", "rotate(0 50 50)");
+		svg.appendChild(indicator);
+		return svg;
+	}
 
 	function dialLabelFor(input) {
 		if (input.classList.contains("instrumentBalance")) { return "Balance"; }
@@ -1263,7 +1284,7 @@
 	function initDial(dial) {
 		var input = document.getElementById(dial.getAttribute("data-for"));
 		if (!input) { return; }
-		dial.innerHTML = DIAL_SVG;
+		dial.replaceChildren(buildDialGraphic());
 		dial.setAttribute("role", "slider");
 		dial.setAttribute("tabindex", "0");
 		dial.setAttribute("aria-label", dialLabelFor(input));
@@ -2475,7 +2496,7 @@
 				if (audios[i].readyState >= 3) { ready++; }
 			}
 			var pct = Math.ceil((ready * 100) / totalToLoad);
-			qs("#loadingLabel").innerHTML = "tuning up (" + pct + "%)...";
+			qs("#loadingLabel").textContent = "tuning up (" + pct + "%)...";
 			qs("#loadingProgressBar").style.width = pct + "%";
 			return ready;
 		}
