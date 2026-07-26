@@ -28,6 +28,9 @@ $root = Split-Path $extDir -Parent
 $srcDir = Join-Path $extDir 'src'
 $distDir = Join-Path $extDir 'dist'
 
+# Keep the generated pack and index synchronized with the source note MP3s.
+& (Join-Path $root 'scripts\build-instrument-pack.ps1')
+
 # Web-app files + dirs that make up the bundle (NO service-worker.js).
 $files = @('index.html', 'main.css', 'manifest.webmanifest')
 $dirs = @('js', 'img', 'snd')
@@ -46,6 +49,12 @@ foreach ($t in $targets) {
 	foreach ($d in $dirs) {
 		Copy-Item (Join-Path $root $d) (Join-Path $out $d) -Recurse -Force
 	}
+
+	# The browser stores receive the indexed pack, not 96 redundant source MP3s.
+	# Vinyl and the silent keep-alive remain separate media files.
+	Get-ChildItem -LiteralPath (Join-Path $out 'snd') -File -Filter '*.mp3' |
+		Where-Object { $_.Name -ne 'vinyl_noise.mp3' } |
+		ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 
 	# Web-app img/ assets that are NOT part of the extension package (e.g. a
 	# store-listing-only icon kept in the repo). Dropped after the wholesale copy.
@@ -90,6 +99,16 @@ foreach ($t in $targets) {
 		}
 		if ($entryNames -contains 'img/icon-128.png') {
 			throw "Cannot package ${t}: store-listing icon must be excluded."
+		}
+		if (-not ($entryNames -contains 'snd/instruments.pack')) {
+			throw "Cannot package ${t}: snd/instruments.pack is missing."
+		}
+		if (-not ($entryNames -contains 'js/instrument-pack.js')) {
+			throw "Cannot package ${t}: js/instrument-pack.js is missing."
+		}
+		$packagedMp3s = @($entryNames | Where-Object { $_ -match '^snd/.*\.mp3$' })
+		if ($packagedMp3s.Count -ne 1 -or $packagedMp3s[0] -ne 'snd/vinyl_noise.mp3') {
+			throw "Cannot package ${t}: source note MP3s must be excluded while vinyl remains."
 		}
 		$entryCount = $zip.Entries.Count
 	} finally {

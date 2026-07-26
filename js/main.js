@@ -98,7 +98,7 @@
 
 	// Master-bus safety limiter (user 2026-06-13; threshold lowered 2026-06-15):
 	// a single DynamicsCompressorNode sits between the WHOLE Web Audio mix (every
-	// instrument note + both vinyl beds) and the destination — the ghost keep-alive
+	// instrument note + vinyl bed) and the destination — the ghost keep-alive
 	// element is never routed through the context, so it is untouched. It is a
 	// SAFETY net, not a loudness tool: the Web Audio compressor applies only
 	// attenuation (no makeup gain), so below the threshold it is unity/transparent
@@ -196,16 +196,15 @@
 	}
 
 	/* ---------- sampler library (buffer-based note engine, v72) ---------- */
-	// Both modes draw notes from ONE sampler: 7 instruments × 12 mono root
-	// samples (~4.7–4.9 s mp3s in snd/, named "<Instrument> <Note>.mp3"),
+	// Both modes draw notes from ONE sampler: 8 instruments x 12 mono root
+	// samples (~4.7-4.9 s MP3s, named "<Instrument> <Note>.mp3"),
 	// pitch-shifted ±1 semitone via AudioBufferSourceNode.playbackRate on the
 	// [T][N][T] pattern (roots every 3 semitones — user mapping 2026-06-10;
 	// the E4 root joined 2026-06-11, lifting the ceiling from D4 to F4).
 	// Chromatic coverage: notes 42 (F#1) … 77 (F4) on the project's own
 	// note-number scale (just semitone indices — NO MIDI is involved
-	// anywhere in this project). Everything is fetched and decoded up front
-	// behind the loading gate; decoded mono PCM for the full library is
-	// ~84 MB — the price of instant, gapless notes.
+	// anywhere in this project). The 96 source MP3s are concatenated byte-for-byte
+	// into one indexed pack; only active instruments' slices are decoded.
 	var INSTRUMENTS = [
 		{ prefix: "bass",        file: "Hofner Bass" },  // re-added 2026-06-13 (Höfner bass samples)
 		{ prefix: "cello",       file: "Cello" },
@@ -233,6 +232,47 @@
 	var sampleBuffers = {};         // "cello:43" -> decoded AudioBuffer
 	var samplesTotal = INSTRUMENTS.length * ROOT_NOTES.length;   // library size (96); samples decode lazily now
 	var maxSampleSeconds = 0;       // longest decoded buffer (drives the chord-gap length)
+	var instrumentPack = window.MIVIAM_INSTRUMENT_PACK;
+	var instrumentPackEntries = {};
+	var instrumentPackBlob = null;
+	var instrumentPackPromise = null;
+	var instrumentPackFetches = 0;
+	var instrumentPackFailures = 0;
+
+	function validateInstrumentPackIndex() {
+		if (!instrumentPack || !Array.isArray(instrumentPack.files) ||
+		    instrumentPack.count !== samplesTotal ||
+		    instrumentPack.files.length !== samplesTotal ||
+		    !Number.isSafeInteger(instrumentPack.size) || instrumentPack.size <= 0 ||
+		    typeof instrumentPack.url !== "string") {
+			throw new Error("Invalid MiViAm instrument-pack index");
+		}
+
+		var nextOffset = 0;
+		instrumentPack.files.forEach(function (entry) {
+			if (!entry || typeof entry.n !== "string" ||
+			    !Number.isSafeInteger(entry.o) || entry.o !== nextOffset ||
+			    !Number.isSafeInteger(entry.l) || entry.l <= 0 ||
+			    instrumentPackEntries[entry.n]) {
+				throw new Error("Invalid MiViAm instrument-pack entry");
+			}
+			instrumentPackEntries[entry.n] = entry;
+			nextOffset += entry.l;
+		});
+		if (nextOffset !== instrumentPack.size) {
+			throw new Error("MiViAm instrument-pack index does not match its size");
+		}
+
+		INSTRUMENTS.forEach(function (instr) {
+			ROOT_NOTES.forEach(function (root) {
+				var name = instr.file + " " + root.file + ".mp3";
+				if (!instrumentPackEntries[name]) {
+					throw new Error("Missing instrument-pack entry: " + name);
+				}
+			});
+		});
+	}
+	validateInstrumentPackIndex();
 
 	// [T][N][T]: which root sample + playbackRate serves a note number. Roots
 	// sit every 3 semitones, so every note in 42..77 is at most 1 semitone
@@ -261,16 +301,13 @@
 		});
 	}
 
-	// One sample's fetch + decode, with retries: a transient hiccup must not
-	// mute that note for the whole session (user 2026-06-11). Standard
+	// One sample-slice decode, with retries: a transient hiccup must not mute
+	// that note for the whole session (user 2026-06-11). Standard
 	// backoff — 3 retries after the first try (4 attempts total), delays
 	// ~0.5–1 s / 1–2 s / 2–4 s (exponential ×2 with 50–100% jitter so a mass
-	// failure does not retry in lockstep). EVERY failure kind retries —
-	// network error, HTTP status and decode error alike: all 84 files are
-	// known to exist, so even a 404 here is a server hiccup, and the SW only
-	// ever caches 200s, so each retry truly re-hits the network. The
-	// returned promise always RESOLVES, exactly once per job, after the
-	// final attempt settles.
+	// failure does not retry in lockstep). Network, HTTP, pack-integrity, and
+	// decode failures all retry. The returned promise always RESOLVES, exactly
+	// once per job, after the final attempt settles.
 	var SAMPLE_RETRY_MAX = 3;
 	var sampleRetries = 0;   // retry attempts so far (debug — _miviam)
 	var samplesFailed = 0;   // jobs given up after all retries (debug)
@@ -279,19 +316,44 @@
 	var sampleLoadQueue = [];
 	var sampleLoadsActive = 0;
 
-	// Lazy decoding + evict-on-disable (user 2026-06-14): samples are NO LONGER
-	// all decoded up front. Each instrument's 12 samples are fetched + decoded the
-	// first time the instrument is AUDIBLE (volume > 0) and EVICTED when it leaves
-	// the mix (volume 0), so the ~84 MB decoded library tracks only the instruments
-	// currently audible. The mp3 bytes are tiny + SW-cached, so the only real cost
-	// is the decode; a freshly-(re)enabled instrument's first notes skip silently
+	// Lazy decoding + evict-on-disable (user 2026-06-14): each instrument's 12
+	// indexed slices are decoded the first time the instrument is AUDIBLE
+	// (volume > 0) and EVICTED when it leaves the mix (volume 0), so decoded PCM
+	// tracks only the instruments currently audible. The single encoded pack
+	// stays cached as a ~4.7 MB Blob; a freshly-(re)enabled instrument's first
+	// notes skip silently
 	// for the fraction of a second until its buffers land — the brief warm-up the
 	// user accepted (2026-06-14) when raising an instrument from 0. maxSampleSeconds is a HIGH-WATER
 	// mark (only grows, never reset on evict), so the chord gap (gapMs) stays a safe
 	// upper bound: a note can only ring if its buffer is decoded, and decoding raises
 	// maxSampleSeconds, so gapMs always covers any ringing note — no overlap.
-	function urlForRoot(instr, root) {
-		return "snd/" + encodeURIComponent(instr.file + " " + root.file) + ".mp3";
+	function packEntryForRoot(instr, root) {
+		return instrumentPackEntries[instr.file + " " + root.file + ".mp3"];
+	}
+
+	function getInstrumentPack() {
+		if (instrumentPackBlob) { return Promise.resolve(instrumentPackBlob); }
+		if (instrumentPackPromise) { return instrumentPackPromise; }
+
+		instrumentPackFetches++;
+		instrumentPackPromise = fetch(instrumentPack.url)
+			.then(function (res) {
+				if (!res.ok) { throw new Error(instrumentPack.url + " -> " + res.status); }
+				return res.blob();
+			})
+			.then(function (blob) {
+				if (blob.size !== instrumentPack.size) {
+					throw new Error("Instrument pack size " + blob.size + " != " + instrumentPack.size);
+				}
+				instrumentPackBlob = blob;
+				return blob;
+			})
+			.catch(function (error) {
+				instrumentPackFailures++;
+				instrumentPackPromise = null;
+				throw error;
+			});
+		return instrumentPackPromise;
 	}
 	// "Active" = audible in the mix: positive volume. Drives the lazy-decode set
 	// (a volume-0 instrument is evicted; raising it re-decodes with a brief warm-up).
@@ -300,16 +362,18 @@
 		return !!(el && parseInt(el.value, 10) > 0);
 	}
 
-	// One sample's fetch + decode, with retries (exponential backoff + jitter; the
-	// SW only caches 200s so each retry re-hits the network). Stores the decoded
-	// buffer ONLY if its instrument is still active when it lands (it may have been
-	// evicted mid-flight — then discard, but still record maxSampleSeconds). The
-	// returned promise resolves once, after the final attempt settles.
-	function loadSample(url, key, prefix, attempt) {
-		return fetch(url)
-			.then(function (res) {
-				if (!res.ok) { throw new Error(url + " -> " + res.status); }
-				return res.arrayBuffer();
+	// Decode one indexed MP3 slice. Stores the decoded buffer ONLY if its
+	// instrument is still active when it lands (it may have been evicted
+	// mid-flight — then discard, but still record maxSampleSeconds).
+	function loadSample(entry, key, prefix, attempt) {
+		return getInstrumentPack()
+			.then(function (pack) {
+				if (!instrumentActive(prefix)) { throw new Error("instrument inactive"); }
+				var end = entry.o + entry.l;
+				if (entry.o < 0 || end > pack.size) {
+					throw new Error("Instrument-pack slice is out of bounds: " + entry.n);
+				}
+				return pack.slice(entry.o, end, "audio/mpeg").arrayBuffer();
 			})
 			.then(decodeBuffer)
 			.then(function (buf) {
@@ -333,12 +397,12 @@
 				sampleRetries++;
 				var delay = Math.pow(2, attempt - 1) * 1000 * (0.5 + Math.random() * 0.5);
 				return new Promise(function (resolve) { setTimeout(resolve, delay); })
-					.then(function () { return loadSample(url, key, prefix, attempt + 1); });
+					.then(function () { return loadSample(entry, key, prefix, attempt + 1); });
 			});
 	}
 
 	// Fetch + decode at most four samples at once. A preset can enable all eight
-	// instruments together (96 files); starting every decode concurrently creates
+	// instruments together (96 slices); starting every decode concurrently creates
 	// a large transient PCM/decoder allocation spike and has historically exhausted
 	// browser decoder resources. A small queue preserves lazy loading while keeping
 	// both encoded and decoded in-flight memory bounded.
@@ -349,7 +413,7 @@
 			pumpSampleLoadQueue();
 		}
 		try {
-			loadSample(job.url, job.key, job.prefix, 1).then(finish, finish);
+			loadSample(job.entry, job.key, job.prefix, 1).then(finish, finish);
 		} catch (e) {
 			delete pendingLoads[job.key];
 			finish();
@@ -368,8 +432,8 @@
 		}
 	}
 
-	function queueSampleLoad(url, key, prefix) {
-		sampleLoadQueue.push({ url: url, key: key, prefix: prefix });
+	function queueSampleLoad(entry, key, prefix) {
+		sampleLoadQueue.push({ entry: entry, key: key, prefix: prefix });
 		pumpSampleLoadQueue();
 	}
 
@@ -384,7 +448,7 @@
 			var key = prefix + ":" + root.note;
 			if (sampleBuffers[key] || pendingLoads[key]) { return; }
 			pendingLoads[key] = true;
-			queueSampleLoad(urlForRoot(instr, root), key, prefix);
+			queueSampleLoad(packEntryForRoot(instr, root), key, prefix);
 		});
 	}
 
@@ -798,7 +862,7 @@
 	}
 
 
-	function setupPanning() {   // name kept from the element era: routes the vinyl beds + resumes the ctx
+	function setupPanning() {   // name kept from the element era: routes the vinyl bed + resumes the ctx
 		if (!audioCtx) { return; }
 		if (vinylRouted) {
 			if (audioCtx.state === "suspended") { audioCtx.resume().catch(function () {}); }
@@ -2582,8 +2646,8 @@
 		});
 
 		// ---- loading gate (media elements only) ----
-		// Reveal the controls once the 3 media ELEMENTS (two vinyl beds + the
-		// ghost) are playable. Sampler files are NOT waited on any more — they
+		// Reveal the controls once the two media elements (vinyl + ghost) are
+		// playable. Sampler files are NOT waited on any more — they
 		// decode lazily per active instrument (v161/lazy-decode), so the gate is
 		// just the old belt-and-braces media-element check (Firefox throttles
 		// preloads and drops canplay events): immediate check, event listeners, a
@@ -2591,7 +2655,7 @@
 		// idempotent, so whichever path wins runs setup once; it then triggers the
 		// first reconcile (via buildSoundArray) that starts decoding the active mix.
 		var audios = qsa("audio");
-		var totalToLoad = audios.length;   // only the 3 media elements gate startup now; samples decode lazily
+		var totalToLoad = audios.length;   // only vinyl + ghost gate startup now; samples decode lazily
 		var loadingDone = false;
 		var loadPoll = null;
 		var loadCeiling = null;
@@ -2668,7 +2732,7 @@
 		ensureAudioContext();                          // suspended is fine — it can decode samples on demand later
 		// Samples decode lazily now (finishLoading → restoreState → buildSoundArray
 		// → reconcile loads the active instruments); the gate only waits for the 3
-		// media elements (vinyl beds + ghost), so controls appear fast.
+		// media elements (vinyl + ghost), so controls appear fast.
 		audios.forEach(function (a) { a.addEventListener("canplay", onCanPlay); });
 		onCanPlay();                                   // catch media already ready (e.g. cached)
 		loadPoll = setInterval(pollTick, POLL_MS);     // catch missed/throttled canplay events
@@ -2694,6 +2758,13 @@
 		get sampleLoadQueue() { return sampleLoadQueue.map(function (job) { return job.key; }); },
 		get sampleLoadsActive() { return sampleLoadsActive; },
 		get sampleLoadConcurrency() { return SAMPLE_LOAD_CONCURRENCY; },
+		get instrumentPackLoaded() { return !!instrumentPackBlob; },
+		get instrumentPackSize() { return instrumentPackBlob ? instrumentPackBlob.size : 0; },
+		get instrumentPackExpectedSize() { return instrumentPack.size; },
+		get instrumentPackVersion() { return instrumentPack.version; },
+		get instrumentPackEntries() { return instrumentPack.files.length; },
+		get instrumentPackFetches() { return instrumentPackFetches; },
+		get instrumentPackFailures() { return instrumentPackFailures; },
 		reconcileSamples: reconcileSamples,   // force a synchronous reconcile (bypasses the debounce) for tests
 		get maxSampleSeconds() { return maxSampleSeconds; },
 		get gapMs() { return gapMs(); },

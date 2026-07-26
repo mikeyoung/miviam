@@ -2,7 +2,8 @@
 
 A thin wrapper that ships the **MiViAm** web app as a browser extension. The
 toolbar button opens the full app in its own dedicated tab; everything runs
-**offline** because all 96 samples + the shell are packaged inside the extension.
+**offline** because the indexed 96-note instrument pack + the shell are packaged
+inside the extension.
 
 This directory holds only the **source** (manifests, the background opener, the
 build script). The loadable bundles are generated into `dist/` (gitignored).
@@ -34,7 +35,10 @@ pwsh extension/build.ps1 -Target chrome
 pwsh extension/build.ps1 -Target firefox
 ```
 Each bundle is a copy of `index.html`, `main.css`, `manifest.webmanifest`, `js/`,
-`img/`, `snd/`, plus that browser's `manifest.json` and the shared `background.js`.
+`img/`, and the runtime files in `snd/`, plus that browser's `manifest.json` and
+the shared `background.js`. The build first regenerates the byte-exact instrument
+pack and compact filename/offset/length index, then excludes the 96 source note
+MP3s from the extension; vinyl and the silent keep-alive remain separate.
 The PWA **service worker is intentionally not copied** — `js/main.js` skips
 registering it on the `chrome-extension:` / `moz-extension:` origin (a no-op on
 the live https site), and the assets are already packaged. **Re-run the build

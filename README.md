@@ -60,7 +60,7 @@ In a supporting browser, use **Install Locally** in Options & Info — or your b
 
 ## Running locally
 
-MiViAm is a **static site with no build step** — just serve the folder over HTTP and open it. (A service worker powers offline/PWA, so it must be served over `http://localhost` or `https://`; opening `index.html` directly from `file://` won't register the service worker.)
+MiViAm is a **static site with no runtime build step** — just serve the folder over HTTP and open it. (A service worker powers offline/PWA, so it must be served over `http://localhost` or `https://`; opening `index.html` directly from `file://` won't register the service worker.) The generated instrument pack is committed; run `pwsh scripts/build-instrument-pack.ps1` only after changing its source note MP3s.
 
 ```bash
 # Python 3
@@ -75,8 +75,8 @@ npx serve
 
 ## Tech stack
 
-- **Vanilla JavaScript** — no framework, no jQuery, **no build step**. Settings are kept in sync with the controls by hand; at this scale that's simpler than adding React/Vue and a toolchain (and it keeps the dependency and security surface tiny).
-- **Web Audio API** — a buffer‑based sampler: each note is an `AudioBufferSourceNode` pitch‑shifted via `playbackRate`, routed through per‑note gain/pan into a shared instrument bus, a multi‑tap delay, and a master limiter. Samples load **lazily** — each instrument's 12 notes are fetched and decoded only when it's audible and evicted at volume 0 (with retry/backoff), so memory tracks just the instruments you're hearing.
+- **Vanilla JavaScript** — no framework, no jQuery, and no runtime build. Settings are kept in sync with the controls by hand; at this scale that's simpler than adding React/Vue and a toolchain (and it keeps the dependency and security surface tiny).
+- **Web Audio API** — a buffer‑based sampler: each note is an `AudioBufferSourceNode` pitch‑shifted via `playbackRate`, routed through per‑note gain/pan into a shared instrument bus, a multi‑tap delay, and a master limiter. The 96 note MP3s are concatenated byte-for-byte into one indexed 4.73 MiB pack with no recompression; the app decodes each note from its `Blob.slice()`. Samples still load **lazily** — an instrument's 12 slices are decoded only when it is audible and evicted at volume 0 (with retry/backoff), so decoded memory tracks just the instruments you're hearing.
 - **Media Session API + silent keep‑alive** — registers lock‑screen metadata and transport controls, and a silent looping element keeps the OS media session alive so playback survives backgrounding and iOS lock‑screen Web Audio suspension; it yields focus (stops) on interruption.
 - **Service Worker + Web App Manifest** — offline app‑shell precaching plus a runtime audio cache; installable as a PWA.
 - **`localStorage`** — persists your last settings.
@@ -87,11 +87,13 @@ npx serve
 ```
 index.html             UI markup
 js/main.js             all app logic (one self-contained module)
+js/instrument-pack.js  generated filename/offset/length index
 main.css               styles
 service-worker.js      offline app-shell + runtime audio cache
 manifest.webmanifest   PWA manifest
 img/                   icons + background art
-snd/                   audio samples (mp3) + the vinyl bed
+snd/                   source note MP3s, generated instrument pack, vinyl + silence
+scripts/               deterministic instrument-pack builder
 extension/             optional Chrome/Firefox extension wrapper (source + build script)
 ```
 

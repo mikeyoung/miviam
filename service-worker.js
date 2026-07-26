@@ -1,19 +1,18 @@
 /* MiViAm service worker — offline app shell + runtime audio cache.
- * Plain vanilla SW, no build step. See project_tracking/pwa_conversion_plan.md.
+ * Plain vanilla SW, no runtime build. See project_tracking/pwa_conversion_plan.md.
  */
-var SHELL_CACHE = "miviam-shell-v161";
-var AUDIO_CACHE = "miviam-audio-v7";   // v7: Celeste samples re-recorded in place (incl. the
-                                       // E4 filename fix) - same URLs, new bytes. Cache-first, so only a purge (a
-                                       // fresh cache name) delivers the new bytes to already-cached clients.
-                                       // (v6 = flute re-record; v5 = flute URL rename; v4 = choir.)
+var SHELL_CACHE = "miviam-shell-v162";
+var AUDIO_CACHE = "miviam-audio-v8";   // v8: 96 instrument MP3s now live in one content-versioned pack.
+                                       // The fresh cache also removes obsolete per-note cache entries.
 
 // Small app shell — precached on install. Audio is intentionally NOT here
-// (it is ~12 MB and runtime-cached on demand, one format per browser).
+// (the instrument pack + vinyl are ~9 MB and runtime-cached on demand).
 var SHELL = [
 	"./",
 	"index.html",
 	"main.css?v=58",
-	"js/main.js?v=126",
+	"js/instrument-pack.js?v=1",
+	"js/main.js?v=127",
 	"manifest.webmanifest",
 	"img/bg.jpg",
 	"img/content_bg.png",
@@ -94,7 +93,10 @@ self.addEventListener("fetch", function (event) {
 function handleAudio(req) {
 	return caches.open(AUDIO_CACHE).then(function (cache) {
 		var u = new URL(req.url);
-		var keyUrl = u.origin + u.pathname; // path-only key, shared across range requests — query strings can never bloat the audio cache
+		var isVersionedPack = /\/snd\/instruments\.pack$/.test(u.pathname);
+		// Preserve the pack's content hash. Other media retain a path-only key
+		// shared across range requests.
+		var keyUrl = u.origin + u.pathname + (isVersionedPack ? u.search : "");
 		return cache.match(keyUrl).then(function (full) {
 			if (full) {
 				return req.headers.has("range") ? buildRange(req, full) : full;
