@@ -40,6 +40,90 @@
 				</div>
 				<div id="settings">
 					<br /><br />
+					<!-- Memory: eight permanent PRESETS + four profile slots.
+					     The preset buttons (Default / Space Opera / Classic / Celestial /
+					     Chamber / Drifter / All Bass / Flutes) are plain recalls of factory mixes baked into main.js — no
+					     Store, no title, no pencil, nothing to clear. "Default" replaced the
+					     old "Reset to default" button (2026-06-14). Slots 3..6: Store N saves the whole
+					     mix EXCEPT main volume (instrument volume/balance/width, vinyl,
+					     chime frequency, mode + both mode fields) behind a system
+					     confirm; Recall N applies it. Slots persist (memory3..6); an
+					     empty slot falls back to app defaults, so Recall is never
+					     disabled. Each slot is headed by an editable title (v115):
+					     main.js fills the spans from memoryTitle3..6 — the pencil swaps
+					     in the text field; Enter or a press anywhere outside commits
+					     and persists. -->
+					<table class="mixTable">
+						<tr>
+							<td colspan="2" class="instrumentControl">
+								<div class="label centered instrumentTitle">Memory</div>
+								<div class="settingsBox">
+									<div class="settingsBoxHeader">
+										<span class="settingsSummary" id="memorySummary">Profiles</span>
+										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Memory settings">▼</button>
+									</div>
+									<div class="settingsBoxDrawer">
+										<div class="presetGrid">
+											<button type="button" id="memPreset9">Default</button>
+											<button type="button" id="memPreset1">Space<br>Opera</button>
+											<button type="button" id="memPreset2">Classic</button>
+											<button type="button" id="memPreset7">Celestial</button>
+											<button type="button" id="memPreset8">Chamber</button>
+											<button type="button" id="memPreset10">Drifter</button>
+											<button type="button" id="memPreset11">All Bass</button>
+											<button type="button" id="memPreset12">Flutes</button>
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow3">
+											<span class="memoryTitle" id="memTitle3"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil3" aria-label="Edit profile 3 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit3" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore3" value="Store" />
+											<input type="button" id="memRecall3" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow4">
+											<span class="memoryTitle" id="memTitle4"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil4" aria-label="Edit profile 4 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit4" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore4" value="Store" />
+											<input type="button" id="memRecall4" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow5">
+											<span class="memoryTitle" id="memTitle5"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil5" aria-label="Edit profile 5 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit5" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore5" value="Store" />
+											<input type="button" id="memRecall5" value="Recall" />
+										</div>
+										<div class="memoryTitleRow" id="memTitleRow6">
+											<span class="memoryTitle" id="memTitle6"></span>
+											<button type="button" class="memoryTitlePencil" id="memPencil6" aria-label="Edit profile 6 title">
+												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
+											</button>
+											<input type="text" class="memoryTitleEdit" id="memTitleEdit6" maxlength="24" autocomplete="off" />
+										</div>
+										<div class="memoryRow">
+											<input type="button" id="memStore6" value="Store" />
+											<input type="button" id="memRecall6" value="Recall" />
+										</div>
+										<div class="memoryHint">To clear a profile, press on its recall button for three or more seconds.</div>
+									</div>
+								</div>
+							</td>
+						</tr>
+					</table>
+					<br />
 					<table class="mixTable">
 						<tr>
 							<td colspan="2" class="instrumentControl">
@@ -237,90 +321,6 @@
 						<div class="label centered"><label>Direction: <select id="directionSelect"><option value="forward">Forward</option><option value="reversed">Reversed</option><option value="mixed" selected="selected">Mixed</option></select></label></div>
 						<div class="label centered"><label>Instrument Delay: <input type="checkbox" id="delayCheck" class="bigCheck" autocomplete="off" checked /></label></div>
 					</div>
-					<br />
-					<!-- Memory: eight permanent PRESETS + four profile slots.
-					     The preset buttons (Default / Space Opera / Classic / Celestial /
-					     Chamber / Drifter / All Bass / Flutes) are plain recalls of factory mixes baked into main.js — no
-					     Store, no title, no pencil, nothing to clear. "Default" replaced the
-					     old "Reset to default" button (2026-06-14). Slots 3..6: Store N saves the whole
-					     mix EXCEPT main volume (instrument volume/balance/width, vinyl,
-					     chime frequency, mode + both mode fields) behind a system
-					     confirm; Recall N applies it. Slots persist (memory3..6); an
-					     empty slot falls back to app defaults, so Recall is never
-					     disabled. Each slot is headed by an editable title (v115):
-					     main.js fills the spans from memoryTitle3..6 — the pencil swaps
-					     in the text field; Enter or a press anywhere outside commits
-					     and persists. -->
-					<table class="mixTable">
-						<tr>
-							<td colspan="2" class="instrumentControl">
-								<div class="label centered instrumentTitle">Memory</div>
-								<div class="settingsBox">
-									<div class="settingsBoxHeader">
-										<span class="settingsSummary" id="memorySummary">Profiles</span>
-										<button type="button" class="settingsBoxToggle" aria-expanded="false" aria-label="Toggle Memory settings">▼</button>
-									</div>
-									<div class="settingsBoxDrawer">
-										<div class="presetGrid">
-											<button type="button" id="memPreset9">Default</button>
-											<button type="button" id="memPreset1">Space<br>Opera</button>
-											<button type="button" id="memPreset2">Classic</button>
-											<button type="button" id="memPreset7">Celestial</button>
-											<button type="button" id="memPreset8">Chamber</button>
-											<button type="button" id="memPreset10">Drifter</button>
-											<button type="button" id="memPreset11">All Bass</button>
-											<button type="button" id="memPreset12">Flutes</button>
-										</div>
-										<div class="memoryTitleRow" id="memTitleRow3">
-											<span class="memoryTitle" id="memTitle3"></span>
-											<button type="button" class="memoryTitlePencil" id="memPencil3" aria-label="Edit profile 3 title">
-												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
-											</button>
-											<input type="text" class="memoryTitleEdit" id="memTitleEdit3" maxlength="24" autocomplete="off" />
-										</div>
-										<div class="memoryRow">
-											<input type="button" id="memStore3" value="Store" />
-											<input type="button" id="memRecall3" value="Recall" />
-										</div>
-										<div class="memoryTitleRow" id="memTitleRow4">
-											<span class="memoryTitle" id="memTitle4"></span>
-											<button type="button" class="memoryTitlePencil" id="memPencil4" aria-label="Edit profile 4 title">
-												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
-											</button>
-											<input type="text" class="memoryTitleEdit" id="memTitleEdit4" maxlength="24" autocomplete="off" />
-										</div>
-										<div class="memoryRow">
-											<input type="button" id="memStore4" value="Store" />
-											<input type="button" id="memRecall4" value="Recall" />
-										</div>
-										<div class="memoryTitleRow" id="memTitleRow5">
-											<span class="memoryTitle" id="memTitle5"></span>
-											<button type="button" class="memoryTitlePencil" id="memPencil5" aria-label="Edit profile 5 title">
-												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
-											</button>
-											<input type="text" class="memoryTitleEdit" id="memTitleEdit5" maxlength="24" autocomplete="off" />
-										</div>
-										<div class="memoryRow">
-											<input type="button" id="memStore5" value="Store" />
-											<input type="button" id="memRecall5" value="Recall" />
-										</div>
-										<div class="memoryTitleRow" id="memTitleRow6">
-											<span class="memoryTitle" id="memTitle6"></span>
-											<button type="button" class="memoryTitlePencil" id="memPencil6" aria-label="Edit profile 6 title">
-												<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" /></svg>
-											</button>
-											<input type="text" class="memoryTitleEdit" id="memTitleEdit6" maxlength="24" autocomplete="off" />
-										</div>
-										<div class="memoryRow">
-											<input type="button" id="memStore6" value="Store" />
-											<input type="button" id="memRecall6" value="Recall" />
-										</div>
-										<div class="memoryHint">To clear a profile, press on its recall button for three or more seconds.</div>
-									</div>
-								</div>
-							</td>
-						</tr>
-					</table>
 					<br />
 					<div id="installLocallyRow">
 						<div id="installLocallyHint" class="notes">This is a progressive web app and can be installed locally and run offline with PWA enabled browsers.</div>
