@@ -346,6 +346,7 @@
 					throw new Error("Instrument pack size " + blob.size + " != " + instrumentPack.size);
 				}
 				instrumentPackBlob = blob;
+				instrumentPackPromise = null;
 				return blob;
 			})
 			.catch(function (error) {
@@ -765,8 +766,10 @@
 		if (!audioCtx) { return null; }
 		if (!masterBusTried) {
 			masterBusTried = true;
+			var c = null;
+			var mute = null;
 			try {
-				var c = audioCtx.createDynamicsCompressor();
+				c = audioCtx.createDynamicsCompressor();
 				c.threshold.value = LIMITER_THRESHOLD_DB;
 				c.knee.value = LIMITER_KNEE_DB;
 				c.ratio.value = LIMITER_RATIO;
@@ -776,12 +779,20 @@
 				// mix (instruments + vinyl + ringing note/echo tails) is silenced while
 				// playback is stopped and unmuted while running. The ghost keep-alive
 				// element is NOT routed through here, so it still holds the media session.
-				appMuteGain = audioCtx.createGain();
-				appMuteGain.gain.value = audioEnabled ? 1 : 0;
-				c.connect(appMuteGain);
-				appMuteGain.connect(audioCtx.destination);
+				mute = audioCtx.createGain();
+				mute.gain.value = audioEnabled ? 1 : 0;
+				c.connect(mute);
+				mute.connect(audioCtx.destination);
 				compressorNode = c;
-			} catch (e) { compressorNode = null; appMuteGain = null; }
+				appMuteGain = mute;
+			} catch (e) {
+				// A failed connection can otherwise leave a partial graph rooted at
+				// destination even though the fallback path no longer references it.
+				if (c) { try { c.disconnect(); } catch (e2) {} }
+				if (mute) { try { mute.disconnect(); } catch (e3) {} }
+				compressorNode = null;
+				appMuteGain = null;
+			}
 		}
 		return compressorNode || audioCtx.destination;
 	}
@@ -1251,6 +1262,8 @@
 		qs("#startButton").disabled = false;
 		qs("#sleepButton").disabled = false;
 		audioEnabled = false;
+		clearInterruptionCheck(ghost);
+		clearInterruptionCheck(vinyl);
 		setAppMute(true);              // master mute: silence the whole mix at once (cuts the ringing note/echo tails)
 		stopActiveNotes();             // release every in-flight per-note graph immediately
 		setSoundPlayerArray(0);
@@ -1472,6 +1485,23 @@
 		// The move/up listeners live on the WINDOW for the whole gesture so tracking never
 		// drops when the finger leaves the small dial; they detach on release.
 		var startY = 0, startV = 0, moved = false, activeId = null;
+		function finishDialGesture(commit) {
+			if (activeId === null) { return; }
+			var pointerId = activeId;
+			var changed = moved;
+			activeId = null;
+			window.removeEventListener("pointermove", dialMove);
+			window.removeEventListener("pointerup", dialUp);
+			window.removeEventListener("pointercancel", dialUp);
+			window.removeEventListener("blur", dialBlur);
+			try {
+				if (dial.hasPointerCapture && dial.hasPointerCapture(pointerId)) {
+					dial.releasePointerCapture(pointerId);
+				}
+			} catch (e) {}
+			if (commit && changed) { input.dispatchEvent(new Event("change", { bubbles: true })); }
+		}
+		function dialBlur() { finishDialGesture(true); }
 		function dialMove(e) {
 			if (activeId === null || e.pointerId !== activeId) { return; }
 			var min = parseFloat(input.min), max = parseFloat(input.max);
@@ -1483,19 +1513,19 @@
 		}
 		function dialUp(e) {
 			if (activeId === null || (e.pointerId != null && e.pointerId !== activeId)) { return; }
-			window.removeEventListener("pointermove", dialMove);
-			window.removeEventListener("pointerup", dialUp);
-			window.removeEventListener("pointercancel", dialUp);
-			activeId = null;
-			if (moved) { input.dispatchEvent(new Event("change", { bubbles: true })); }   // commit, like releasing a native slider
+			finishDialGesture(true);   // commit, like releasing a native slider
 		}
 		dial.addEventListener("pointerdown", function (e) {
+			finishDialGesture(true);   // abandon any gesture whose release was lost
 			activeId = e.pointerId; moved = false; startY = e.clientY; startV = parseFloat(input.value);
 			window.addEventListener("pointermove", dialMove);
 			window.addEventListener("pointerup", dialUp);
 			window.addEventListener("pointercancel", dialUp);
+			window.addEventListener("blur", dialBlur);
+			try { if (dial.setPointerCapture) { dial.setPointerCapture(activeId); } } catch (captureError) {}
 			e.preventDefault();
 		});
+		dial.addEventListener("lostpointercapture", dialBlur);
 		dial.addEventListener("wheel", function (e) {
 			e.preventDefault();
 			var step = parseFloat(input.step) || 1;
@@ -1586,6 +1616,21 @@
 		if (ghost && audioEnabled) {
 			ghost.play().catch(function () {});
 		}
+	}
+
+	// Focus interruptions can emit a burst of pause events. Keep at most one
+	// grace-period check per media element and cancel it immediately on Stop.
+	function clearInterruptionCheck(el) {
+		if (!el || el._interruptionTimer == null) { return; }
+		clearTimeout(el._interruptionTimer);
+		el._interruptionTimer = null;
+	}
+	function yieldOnInterruption(el, stillInterrupted) {
+		if (!audioEnabled || !el || el._interruptionTimer != null) { return; }
+		el._interruptionTimer = setTimeout(function () {
+			el._interruptionTimer = null;
+			if (audioEnabled && el.paused && stillInterrupted()) { stopAudio(); }
+		}, 250);
 	}
 
 	/* ---------- settings persistence ---------- */
@@ -1885,7 +1930,10 @@
 	}
 	function syncUrlSoon() {
 		if (urlSyncTimer) { clearTimeout(urlSyncTimer); }
-		urlSyncTimer = setTimeout(syncUrl, 200);   // coalesce slider drags
+		urlSyncTimer = setTimeout(function () {
+			urlSyncTimer = null;
+			syncUrl();
+		}, 200);   // coalesce slider drags
 	}
 	// On load: fold a #patch= patch into localStorage (only KNOWN fields; restoreState then
 	// validates each) so the shared patch becomes the applied + persisted state.
@@ -2136,11 +2184,12 @@
 		el.style.display = "block";
 		if (el.animate) {
 			el.style.overflow = "hidden";
-			el.animate(
+			var anim = el.animate(
 				[{ height: "0px", opacity: 0 }, { height: el.scrollHeight + "px", opacity: 1 }],
 				{ duration: SLIDE_MS, easing: "ease" }
 			);
 			setTimeout(function () {
+				anim.cancel();
 				el.style.overflow = "";
 				done();
 			}, SLIDE_MS + 20);
@@ -2259,6 +2308,7 @@
 	var installedOnDevice = false;  // getInstalledRelatedApps() saw the app THIS load (never persisted — a
 	                                // persisted verdict deadlocked when Chrome withheld beforeinstallprompt
 	                                // after an uninstall, hiding the button with no way back)
+	var installedPopupTimer = null;
 
 	function isStandalone() {
 		return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
@@ -2326,8 +2376,12 @@
 	function showInstalledPopup() {
 		var modal = qs("#installedModal");
 		if (!modal) { return; }
+		if (installedPopupTimer) { clearTimeout(installedPopupTimer); }
 		modal.classList.add("show");
-		setTimeout(function () { modal.classList.remove("show"); }, 8000);
+		installedPopupTimer = setTimeout(function () {
+			installedPopupTimer = null;
+			modal.classList.remove("show");
+		}, 8000);
 	}
 
 	function setupInstall() {
@@ -2359,6 +2413,10 @@
 
 		qs("#installLocallyButton").addEventListener("click", triggerInstall);
 		function closeInstalledModal() {
+			if (installedPopupTimer) {
+				clearTimeout(installedPopupTimer);
+				installedPopupTimer = null;
+			}
 			qs("#installedModal").classList.remove("show");
 		}
 		qs("#installedModalClose").addEventListener("click", closeInstalledModal);
@@ -2442,13 +2500,6 @@
 		// focus hand-off, not on backgrounding. The short re-check ignores a
 		// sub-second glitch that self-recovers; there is no resumable pause in this
 		// app, so the user presses Start to resume.
-		function yieldOnInterruption(el, stillInterrupted) {
-			if (!audioEnabled) { return; }
-			setTimeout(function () {
-				if (audioEnabled && el.paused && stillInterrupted()) { stopAudio(); }
-			}, 250);
-		}
-
 		ghost.addEventListener("pause", function () {
 			yieldOnInterruption(ghost, function () { return true; });
 		});
