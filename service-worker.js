@@ -1,7 +1,7 @@
 /* MiViAm service worker — offline app shell + runtime audio cache.
  * Plain vanilla SW, no runtime build. See project_tracking/pwa_conversion_plan.md.
  */
-var SHELL_CACHE = "miviam-shell-v164";
+var SHELL_CACHE = "miviam-shell-v165";
 var AUDIO_CACHE = "miviam-audio-v8";   // v8: 96 instrument MP3s now live in one content-versioned pack.
                                        // The fresh cache also removes obsolete per-note cache entries.
 
