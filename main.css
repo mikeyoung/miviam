@@ -1,5 +1,12 @@
 /* Sans-serif everywhere — selects don't inherit the body font, so they are
    listed explicitly alongside body and inputs (user 2026-06-10). */
+:root {
+	/* Keep the authored palette stable when the OS or browser requests a dark
+	   or forced-color theme. */
+	color-scheme:only light;
+	forced-color-adjust:none;
+}
+
 body, input, select {
 	font-size:18px;       /* desktop/base reading size (bumped from 16px) */
 	font-family:Verdana, Geneva, Arial, Helvetica, sans-serif;
