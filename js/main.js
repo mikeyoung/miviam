@@ -83,7 +83,7 @@
 		vibesPanWidth: "25", celestePanWidth: "25", celloPanWidth: "25", violinsPanWidth: "25",
 		choirPanWidth: "25"
 	};
-	var VINYL_DEFAULT = "20";       // 101-position scale (user 2026-06-16: 15 -> 33 -> 20; matches all presets)
+	var VINYL_DEFAULT = "20";       // 101-position scale (fresh-load and empty-slot default)
 	var MASTER_DEFAULT = "100";     // master volume percent (0–100)
 	var TOTAL_SOUNDS_DEFAULT = "5";   // chimes; capped at 5 globally (user 2026-06-15: dropdown max + default lowered 7->5). Was "7".
 	var MODE_DEFAULT = "chord";     // playback mode: "chord" | "classic" (user 2026-06-10)
@@ -1739,8 +1739,8 @@
 	// Factory contents: 1/2/7/8/9/10/11/12 are the permanent presets' mixes (Space
 	// Opera / Classic / Celestial / Chamber / Default / Drifter / All Bass / Flutes);
 	// slots 3..6 fall through to the base (empty-state fallback).
-	// Built from the same constants as Reset so "default" can never drift
-	// from the app's own. The user's values are display-scale — a Balance
+	// Built from the app's default constants, with individual factory-preset
+	// overrides below. The user's values are display-scale — a Balance
 	// of 0 is slider 51 (BALANCE_DEFAULT), which the base already applies
 	// to every instrument, named or muted.
 	function defaultMemoryProfile(n) {
@@ -1812,11 +1812,11 @@
 			p.direction = "forward";
 			p.speed = "normal";
 		} else if (n === 9) {
-			// "Default" (user 2026-06-14): the app's fresh-load defaults exactly, so this
-			// preset replaces the old "Reset to default" button. The base already mirrors
-			// every default constant; only Delay differs (LIVE default is ON via
-			// DELAY_DEFAULT, the profile base is OFF) so re-assert it, and — unlike other
-			// presets — also carry the default main volume so Default is a FULL reset.
+			// "Default" (user 2026-06-14): the app's fresh-load defaults, except Vinyl is
+			// 8 (user 2026-08-26). The base already mirrors every default constant; Delay
+			// differs (LIVE default is ON via DELAY_DEFAULT, the profile base is OFF), so
+			// re-assert it. Unlike other presets, also carry the default main volume.
+			p.vinylVol = "8";
 			p.delay = DELAY_DEFAULT;
 			p.masterVol = MASTER_DEFAULT;
 		} else if (n === 10) {
@@ -2151,8 +2151,8 @@
 	}
 
 	function setupMemory() {
-		// The permanent presets, in button order: Default (9, = the fresh-load
-		// defaults, replacing the old "Reset to default"), Space Opera (1), Classic
+		// The permanent presets, in button order: Default (9, fresh-load defaults
+		// except Vinyl 8, replacing the old "Reset to default"), Space Opera (1), Classic
 		// (2), Celestial (7), Chamber (8), Drifter (10, a copy of Default —
 		// user 2026-06-15), All Bass (11) and Flutes (12, both Celestial variants —
 		// user 2026-06-23). Plain recalls of the factory mixes — no Store/title.
