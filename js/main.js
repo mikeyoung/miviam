@@ -83,7 +83,7 @@
 		vibesPanWidth: "25", celestePanWidth: "25", celloPanWidth: "25", violinsPanWidth: "25",
 		choirPanWidth: "25"
 	};
-	var VINYL_DEFAULT = "8";        // 101-position scale (fresh-load and empty-slot default)
+	var VINYL_DEFAULT = "8";        // 101-position scale (fresh-load, preset, and empty-slot default)
 	var MASTER_DEFAULT = "100";     // master volume percent (0–100)
 	var TOTAL_SOUNDS_DEFAULT = "5";   // chimes; capped at 5 globally (user 2026-06-15: dropdown max + default lowered 7->5). Was "7".
 	var MODE_DEFAULT = "chord";     // playback mode: "chord" | "classic" (user 2026-06-10)
@@ -1750,7 +1750,7 @@
 			p[instr.prefix + "Balance"] = BALANCE_DEFAULT;
 			p[instr.prefix + "PanWidth"] = PAN_WIDTH_DEFAULTS[instr.prefix + "PanWidth"] || "0";
 		});
-		p.vinylVol = VINYL_DEFAULT;
+		p.vinylVol = VINYL_DEFAULT;   // All factory presets share Default's vinyl level.
 		p.totalSoundsSelect = TOTAL_SOUNDS_DEFAULT;
 		p.mode = MODE_DEFAULT;
 		p.chordTone = CHORD_TONE_DEFAULT;
@@ -1764,7 +1764,6 @@
 			p.choirVol = "100";
 			p.choirPanWidth = "28";
 			p.totalSoundsSelect = "3";
-			p.vinylVol = "20";
 			p.delay = true;     // user 2026-06-14: Space Opera recalls with Delay on
 		} else if (n === 2) {
 			// "Classic": classic mode on the note D; the core instruments at
@@ -1778,14 +1777,13 @@
 			p.vibesVol = "80";   p.vibesPanWidth = "25";
 			p.mode = "classic";
 			p.classicNote = "D";
-			p.vinylVol = "20";
 			p.totalSoundsSelect = "4";
 			p.speed = "normal";
 			p.direction = "forward";
 			p.delay = false;
 		} else if (n === 7) {
 			// "Celestial": celeste alone, chord mode (Major). Vol 75, chimes 5,
-			// balance centred (display 0), width 50, vinyl 5, no Delay, Forward, Mixed.
+			// balance centred (display 0), width 50, no Delay, Forward, Mixed.
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.celesteVol = "75";
 			p.celesteBalance = BALANCE_DEFAULT;   // display 0 (centre)
@@ -1793,7 +1791,6 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "5";
-			p.vinylVol = "5";
 			p.delay = false;
 			p.direction = "forward";
 			p.speed = "mixed";
@@ -1804,7 +1801,6 @@
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.celloVol = "100";  p.celloBalance = BALANCE_DEFAULT;  p.celloPanWidth = "20";
 			p.fluteVol = "70";   p.fluteBalance = BALANCE_DEFAULT;  p.flutePanWidth = "20";
-			p.vinylVol = "20";
 			p.mode = "chord";
 			p.chordTone = "RANDOM";
 			p.totalSoundsSelect = "4";
@@ -1825,12 +1821,11 @@
 			// masterVol, for the full reset. (Base already sets delay=false; explicit here.)
 			p.direction = "forward";
 			p.delay = false;
-			p.vinylVol = "20";
 		} else if (n === 11) {
 			// "All Bass" (user 2026-06-23): Celestial's recipe with the bass in the
 			// celeste's chair — bass alone, chord mode (Major). Vol 75, chimes 3,
-			// balance centred (display 0), width 0 (bass sits dead centre), vinyl 5
-			// and NO Delay (user 2026-06-23: was vinyl 20 + Delay on), Forward, Normal.
+			// balance centred (display 0), width 0 (bass sits dead centre),
+			// no Delay, Forward, Normal.
 			INSTRUMENTS.forEach(function (instr) { p[instr.prefix + "Vol"] = "0"; });
 			p.bassVol = "75";
 			p.bassBalance = BALANCE_DEFAULT;   // display 0 (centre)
@@ -1838,7 +1833,6 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "3";
-			p.vinylVol = "5";
 			p.delay = false;
 			p.direction = "forward";
 			p.speed = "normal";
@@ -1854,7 +1848,6 @@
 			p.mode = "chord";
 			p.chordTone = "MAJOR";
 			p.totalSoundsSelect = "3";
-			p.vinylVol = "20";
 			p.delay = true;
 			p.direction = "forward";
 			p.speed = "normal";
