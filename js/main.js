@@ -83,7 +83,8 @@
 		vibesPanWidth: "25", celestePanWidth: "25", celloPanWidth: "25", violinsPanWidth: "25",
 		choirPanWidth: "25"
 	};
-	var VINYL_DEFAULT = "8";        // 101-position scale (fresh-load, preset, and empty-slot default)
+	var VINYL_DEFAULT = "8";        // 101-position scale (fresh-load and empty-slot default)
+	var PRESET_VINYL_DEFAULT = "5"; // shared vinyl level for all factory memory presets
 	var MASTER_DEFAULT = "100";     // master volume percent (0–100)
 	var TOTAL_SOUNDS_DEFAULT = "5";   // chimes; capped at 5 globally (user 2026-06-15: dropdown max + default lowered 7->5). Was "7".
 	var MODE_DEFAULT = "chord";     // playback mode: "chord" | "classic" (user 2026-06-10)
@@ -1719,12 +1720,13 @@
 	// Classic / Celestial / Chamber / Drifter / All Bass / Flutes — their names are
 	// their button labels) recall factory mixes 9/1/2/7/8/10/11/12 directly: no
 	// Store, no title, nothing to clear.
-	// "Default" (9) is the app's fresh-load defaults and replaced the old "Reset
-	// to default" button (user 2026-06-14). The SLOTS (3..6) each have Store N /
+	// "Default" (9) uses fresh-load settings except for the shared factory vinyl level,
+	// replacing the old "Reset to default" button. The SLOTS (3..6) each have Store N /
 	// Recall N; Store asks for confirmation through the system dialog first. Slots
 	// persist as JSON under memory3..memory6; an empty slot falls back to the app
 	// defaults, so Recall is always available.
 	var MEMORY_SLOTS = [3, 4, 5, 6];
+	var FACTORY_PRESET_IDS = [9, 1, 2, 7, 8, 10, 11, 12];   // button order
 
 	function memorySliderIds() {
 		var ids = [];
@@ -1750,7 +1752,7 @@
 			p[instr.prefix + "Balance"] = BALANCE_DEFAULT;
 			p[instr.prefix + "PanWidth"] = PAN_WIDTH_DEFAULTS[instr.prefix + "PanWidth"] || "0";
 		});
-		p.vinylVol = VINYL_DEFAULT;   // All factory presets share Default's vinyl level.
+		p.vinylVol = FACTORY_PRESET_IDS.indexOf(n) !== -1 ? PRESET_VINYL_DEFAULT : VINYL_DEFAULT;
 		p.totalSoundsSelect = TOTAL_SOUNDS_DEFAULT;
 		p.mode = MODE_DEFAULT;
 		p.chordTone = CHORD_TONE_DEFAULT;
@@ -1808,10 +1810,9 @@
 			p.direction = "forward";
 			p.speed = "normal";
 		} else if (n === 9) {
-			// "Default" (user 2026-06-14): the app's fresh-load defaults exactly. The base
-			// already mirrors every default constant; Delay differs (LIVE default is ON via
-			// DELAY_DEFAULT, the profile base is OFF), so re-assert it. Unlike other presets,
-			// also carry the default main volume.
+			// "Default": fresh-load settings except for the shared factory vinyl level.
+			// Delay differs from the profile base (LIVE default is ON via DELAY_DEFAULT),
+			// so re-assert it. Unlike other presets, also carry the default main volume.
 			p.delay = DELAY_DEFAULT;
 			p.masterVol = MASTER_DEFAULT;
 		} else if (n === 10) {
@@ -2143,14 +2144,14 @@
 	}
 
 	function setupMemory() {
-		// The permanent presets, in button order: Default (9, fresh-load defaults,
+		// The permanent presets, in button order: Default (9, fresh-load settings except vinyl,
 		// replacing the old "Reset to default"), Space Opera (1), Classic
 		// (2), Celestial (7), Chamber (8), Drifter (10, a copy of Default —
 		// user 2026-06-15), All Bass (11) and Flutes (12, both Celestial variants —
 		// user 2026-06-23). Plain recalls of the factory mixes — no Store/title.
 		// (The 1968 preset was retired 2026-06-14; its Mixed/Mixed/chimes-7/Delay-on
 		// settings are now the app defaults.)
-		[9, 1, 2, 7, 8, 10, 11, 12].forEach(function (n) {
+		FACTORY_PRESET_IDS.forEach(function (n) {
 			qs("#memPreset" + n).addEventListener("click", function () {
 				applyMemoryProfile(defaultMemoryProfile(n));
 			});
